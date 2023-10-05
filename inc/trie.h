@@ -41,12 +41,12 @@ namespace generic_trie {
             }
 
             KTrie():
-                root(new Wrapper<Node>{})
+                root(new Node{})
             { }
 
             struct Node {
                 template<typename T>
-                using ChildrenType = std::unordered_map<T, std::shared_ptr<Wrapper<Node>>>;
+                using ChildrenType = std::unordered_map<T, std::shared_ptr<Node>>;
 
                 // There can be a set of children for each remaining part of the key
                 //   TODO: For optimization, can we skip the first part of the key types, as we will not see that again?
@@ -91,12 +91,12 @@ namespace generic_trie {
 
             // We do not accept partial keys for insertion
             bool insert(const Key& key, const V& value) {
-                std::shared_ptr<Wrapper<Node>> node = getNodeForPartialKey<Keys...>(key, true);
+                std::shared_ptr<Node> node = getNodeForPartialKey<Keys...>(key, true);
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
-                if(node->value.value == std::nullopt) {
-                    node->value.value = value;
+                if(node->value == std::nullopt) {
+                    node->value = value;
                     return true;
                 } else {
                     return false;
@@ -105,7 +105,7 @@ namespace generic_trie {
 
             class Iterator {
                 public:
-                    Iterator(std::shared_ptr<Wrapper<Node>> node):
+                    Iterator(std::shared_ptr<Node> node):
                         m_nodes()
                     {
                         if(node != nullptr) m_nodes.push(node);
@@ -126,7 +126,7 @@ namespace generic_trie {
                         // If the top element does not have a value, then
                         //   keep advancing until we have one that does
                         while(!m_nodes.empty() &&
-                               m_nodes.top()->value.value == std::nullopt)
+                               m_nodes.top()->value == std::nullopt)
                         {
                             advance();
                         }
@@ -136,11 +136,11 @@ namespace generic_trie {
 
                     // The top element must _always_ have a value
                     V& operator*() {
-                        return m_nodes.top()->value.value.value();
+                        return m_nodes.top()->value.value();
                     }
 
                     const V& operator*() const {
-                        return m_nodes.top()->value.value.value();
+                        return m_nodes.top()->value.value();
                     }
 
                     bool operator!=(const Iterator& it) const noexcept {
@@ -176,7 +176,7 @@ namespace generic_trie {
 
                         // Iterate over every possible child in the tuple
                         //   and add its children map to the stack
-                        forEach(node->value.children, [this](auto& child_map) {
+                        forEach(node->children, [this](auto& child_map) {
                             for(auto&& [v, child] : child_map) {
                                 // 'v' is stored in the child node, and can be
                                 //   ignored here
@@ -186,7 +186,7 @@ namespace generic_trie {
                     }
 
                 private:
-                    std::stack<std::shared_ptr<Wrapper<Node>>> m_nodes;
+                    std::stack<std::shared_ptr<Node>> m_nodes;
             };
 
             Iterator end() const noexcept {
@@ -195,7 +195,7 @@ namespace generic_trie {
 
             template<typename... PartialKey>
             Iterator find(const std::tuple<PartialKey...>& key) {
-                std::shared_ptr<Wrapper<Node>> node = getNodeForPartialKey(key);
+                std::shared_ptr<Node> node = getNodeForPartialKey(key);
 
                 return Iterator{node};
             }
@@ -204,34 +204,34 @@ namespace generic_trie {
             Iterator find(PartialKey&&... key) {
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
-                std::shared_ptr<Wrapper<Node>> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+                std::shared_ptr<Node> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
 
                 return Iterator{node};
             }
 
             template<typename... PartialKey>
             void erase(std::tuple<PartialKey...> key) {
-                std::shared_ptr<Wrapper<Node>> node = getNodeForPartialKey(key);
+                std::shared_ptr<Node> node = getNodeForPartialKey(key);
 
                 // TODO: We should probably actually return the erased values as
                 //   well
 
                 // For each part of the key, erase all children
                 ([&] {
-                    std::get<Keys>(node->value.children).clear();
+                    std::get<Keys>(node->children).clear();
                 }(), ...);
             }
 
         // protected:
             template<typename... PartialKey>
-            std::shared_ptr<Wrapper<Node>> getNodeForPartialKey(const std::tuple<PartialKey...>& key,
+            std::shared_ptr<Node> getNodeForPartialKey(const std::tuple<PartialKey...>& key,
                                                                 bool createIfKeyDoesNotExist = false)
             {
                 return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{}, createIfKeyDoesNotExist);
             }
 
             template<typename T, std::size_t... Indices>
-            std::shared_ptr<Wrapper<Node>> getNodeForPartialKey(const T& key,
+            std::shared_ptr<Node> getNodeForPartialKey(const T& key,
                                                                 std::index_sequence<Indices...>,
                                                                 bool createIfKeyDoesNotExist = false)
             {
@@ -241,11 +241,11 @@ namespace generic_trie {
             }
 
             template<typename... PartialKey>
-            std::shared_ptr<Wrapper<Node>> getNodeForPartialKeyImpl(
+            std::shared_ptr<Node> getNodeForPartialKeyImpl(
                     const std::tuple<Wrapper<PartialKey>...>& key,
                     bool createIfKeyDoesNotExist = false)
             {
-                std::shared_ptr<Wrapper<Node>> node = root;
+                std::shared_ptr<Node> node = root;
 
                 std::apply([&](auto&&... args) {
                     node = getNodeForPartialKeyImpl<PartialKey...>(args..., createIfKeyDoesNotExist);
@@ -256,16 +256,16 @@ namespace generic_trie {
 
 
             template<typename... PartialKey>
-            std::shared_ptr<Wrapper<Node>> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
+            std::shared_ptr<Node> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
                                                            bool createIfKeyDoesNotExist = false)
             {
-                std::shared_ptr<Wrapper<Node>> node = root;
+                std::shared_ptr<Node> node = root;
 
                 // If this is the first time ever trying to get a node, make
                 //   sure that we either return early or initialize root
                 if(node == nullptr) {
                     if(createIfKeyDoesNotExist) {
-                        root = node = std::make_shared<Wrapper<Node>>();
+                        root = node = std::make_shared<Node>();
                     } else {
                         return nullptr;
                     }
@@ -288,14 +288,14 @@ namespace generic_trie {
 
                     // Find the correct 'children' for this type
                     // Children are stored in a tuple of hashmap<T, shared_ptr<Node> >
-                    auto& children = getChildrenTypeFromTuple<RawType>(node->value.children);
+                    auto& children = getChildrenTypeFromTuple<RawType>(node->children);
 
                     // If the node for this key value doesn't exist, then create
                     //  it if we are asked to, otherwise, set 'node' to null to
                     //  denote a lookup failure
                     if(children.count(key.value) == 0) {
                         if(createIfKeyDoesNotExist) {
-                            node = children[key.value] = std::make_shared<Wrapper<Node>>();
+                            node = children[key.value] = std::make_shared<Node>();
                         } else {
                             node = nullptr;
                         }
@@ -326,7 +326,7 @@ namespace generic_trie {
 
 
         private:
-            std::shared_ptr<Wrapper<Node>> root;
+            std::shared_ptr<Node> root;
     };
 }
 
