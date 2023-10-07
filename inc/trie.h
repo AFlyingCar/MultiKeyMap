@@ -45,6 +45,13 @@ namespace generic_trie {
             { }
 
             struct INode {
+                // TODO: We only use virtual for constexpr 'getIndex', can we
+                //   avoid this completely?
+                // On that note: since we only use constexpr virtual, and not
+                //   runtime virtual, is there a way we can avoid the creation
+                //   of a vtable?
+                virtual ~INode() = default;
+
                 template<typename T>
                 using ChildrenType = std::unordered_map<T, std::shared_ptr<INode>>;
 
@@ -82,18 +89,31 @@ namespace generic_trie {
                 //   }
                 std::tuple< ChildrenType<Keys>... > children;
 
+                using Data = std::pair<Key, V>;
+
                 // Value is optional as one is only held if this is a leaf
                 //   TODO: With template magic this could probably be skipped
                 //     if Keys... is not empty (as if it's not empty then it's
                 //       automatically not a leaf
-                std::optional<V> value;
+                std::optional<Data> data;
+
+                constexpr virtual std::size_t getIndex() const noexcept = 0;
+                constexpr virtual bool isLeaf() const noexcept = 0;
             };
 
             template<std::size_t I = 0>
             struct Node: INode {
                 static constexpr std::size_t Index = I;
 
-                using KeyHead = TupleTail<I, Keys...>;
+                constexpr virtual std::size_t getIndex() const noexcept override {
+                    return Index;
+                }
+
+                constexpr virtual bool isLeaf() const noexcept override {
+                    return Index == sizeof...(Keys) - 1;
+                }
+
+                using KeyHead = TupleHead<I, Keys...>;
                 using KeyTail = TupleTail<I, Keys...>;
 
                 KeyHead key_head;
@@ -106,8 +126,8 @@ namespace generic_trie {
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
-                if(node->value == std::nullopt) {
-                    node->value = value;
+                if(node->data == std::nullopt) {
+                    node->data = { key, value};
                     return true;
                 } else {
                     return false;
@@ -137,7 +157,7 @@ namespace generic_trie {
                         // If the top element does not have a value, then
                         //   keep advancing until we have one that does
                         while(!m_nodes.empty() &&
-                               m_nodes.top()->value == std::nullopt)
+                               m_nodes.top()->data == std::nullopt)
                         {
                             advance();
                         }
@@ -146,12 +166,12 @@ namespace generic_trie {
                     }
 
                     // The top element must _always_ have a value
-                    V& operator*() {
-                        return m_nodes.top()->value.value();
+                    typename INode::Data& operator*() {
+                        return m_nodes.top()->data.value();
                     }
 
                     const V& operator*() const {
-                        return m_nodes.top()->value.value();
+                        return m_nodes.top()->data.value();
                     }
 
                     bool operator!=(const Iterator& it) const noexcept {
@@ -236,7 +256,7 @@ namespace generic_trie {
         // protected:
             template<typename... PartialKey>
             std::shared_ptr<INode> getNodeForPartialKey(const std::tuple<PartialKey...>& key,
-                                                                bool createIfKeyDoesNotExist = false)
+                                                        bool createIfKeyDoesNotExist = false)
             {
                 return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{}, createIfKeyDoesNotExist);
             }
