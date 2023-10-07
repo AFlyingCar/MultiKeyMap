@@ -104,6 +104,12 @@ auto tupleHead(std::tuple<Ts...>& t) {
 }
 
 template<std::size_t I, typename... Ts>
+using TupleHead = decltype(tupleHead<I, Ts...>(std::declval<std::tuple<Ts...>>()));
+
+template<std::size_t I, typename... Ts>
+using TupleTail = decltype(tupleTail<I, Ts...>(std::declval<std::tuple<Ts...>>()));
+
+template<std::size_t I, typename... Ts>
 auto splitTuple(std::tuple<Ts...>&& t) {
     return std::make_pair(
         tupleHead<I + 1, Ts...>(t), // Split 1 past the index so we don't accidentally duplicate the split location
