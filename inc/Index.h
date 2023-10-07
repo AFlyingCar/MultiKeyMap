@@ -47,5 +47,77 @@ void forEach(std::tuple<Args...>& tuple, F&& f) {
     forEach(std::make_index_sequence<sizeof...(Args)>{}, tuple, f);
 }
 
+///////
+
+template<typename... Ts>
+using TupleCat_t = decltype(std::tuple_cat(std::declval<Ts>()...));
+
+/**
+ * @brief Removes all instances of type T from parameter pack Ts
+ * @details https://stackoverflow.com/a/23863962
+ */
+template<typename T, typename... Ts>
+using RemoveType = TupleCat_t<
+    typename std::conditional<
+        std::is_same<T, Ts>::value,
+        std::tuple<>,
+        std::tuple<Ts>
+    >::type...
+>;
+
+///////
+// Following adapted from: https://stackoverflow.com/a/24046437
+
+template<std::size_t I, std::size_t... Is, typename Tuple>
+auto tupleTailImpl(std::index_sequence<Is...>, Tuple&& t) {
+    // Shift all indices up by I so we only get the last "num Is" - I elements
+    return std::make_tuple(std::get<Is+I>(t)...);
+}
+
+template<std::size_t I, typename... Ts>
+auto tupleTail(std::tuple<Ts...>&& t) {
+    // Only get "num Ts" - I elements
+    return tupleTailImpl<I>(std::make_index_sequence<sizeof...(Ts) - I>(), t);
+}
+
+template<std::size_t I, typename... Ts>
+auto tupleTail(std::tuple<Ts...>& t) {
+    // Only get "num Ts" - I elements
+    return tupleTailImpl<I>(std::make_index_sequence<sizeof...(Ts) - I>(), t);
+}
+
+template<std::size_t... Is, typename Tuple>
+auto tupleHeadImpl(std::index_sequence<Is...>, Tuple&& t) {
+    return std::make_tuple(std::get<Is>(t)...);
+}
+
+template<std::size_t I, typename... Ts>
+auto tupleHead(std::tuple<Ts...>&& t) {
+    // Only get "num Ts" - I elements
+    return tupleHeadImpl(std::make_index_sequence<sizeof...(Ts) - I - 1U>(), t);
+}
+
+template<std::size_t I, typename... Ts>
+auto tupleHead(std::tuple<Ts...>& t) {
+    // Only get "num Ts" - I elements
+    return tupleHeadImpl(std::make_index_sequence<sizeof...(Ts) - I - 1U>(), t);
+}
+
+template<std::size_t I, typename... Ts>
+auto splitTuple(std::tuple<Ts...>&& t) {
+    return std::make_pair(
+        tupleHead<I + 1, Ts...>(t), // Split 1 past the index so we don't accidentally duplicate the split location
+        tupleTail<I, Ts...>(t)
+    );
+}
+
+template<std::size_t I, typename... Ts>
+auto splitTuple(std::tuple<Ts...>& t) {
+    return std::make_pair(
+        tupleHead<I + 1, Ts...>(t), // Split 1 past the index so we don't accidentally duplicate the split location
+        tupleTail<I, Ts...>(t)
+    );
+}
+
 #endif
 
