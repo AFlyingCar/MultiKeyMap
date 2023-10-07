@@ -44,9 +44,9 @@ namespace generic_trie {
                 root(new Node{})
             { }
 
-            struct Node {
+            struct INode {
                 template<typename T>
-                using ChildrenType = std::unordered_map<T, std::shared_ptr<Node>>;
+                using ChildrenType = std::unordered_map<T, std::shared_ptr<INode>>;
 
                 // There can be a set of children for each remaining part of the key
                 //   TODO: For optimization, can we skip the first part of the key types, as we will not see that again?
@@ -89,9 +89,20 @@ namespace generic_trie {
                 std::optional<V> value;
             };
 
+            template<std::size_t I = 0>
+            struct Node: INode {
+                static constexpr std::size_t Index = I;
+
+                using KeyHead = TupleTail<I, Keys...>;
+                using KeyTail = TupleTail<I, Keys...>;
+
+                KeyHead key_head;
+                KeyTail key_tail;
+            };
+
             // We do not accept partial keys for insertion
             bool insert(const Key& key, const V& value) {
-                std::shared_ptr<Node> node = getNodeForPartialKey<Keys...>(key, true);
+                std::shared_ptr<INode> node = getNodeForPartialKey<Keys...>(key, true);
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
@@ -105,7 +116,7 @@ namespace generic_trie {
 
             class Iterator {
                 public:
-                    Iterator(std::shared_ptr<Node> node):
+                    Iterator(std::shared_ptr<INode> node):
                         m_nodes()
                     {
                         if(node != nullptr) m_nodes.push(node);
@@ -186,7 +197,7 @@ namespace generic_trie {
                     }
 
                 private:
-                    std::stack<std::shared_ptr<Node>> m_nodes;
+                    std::stack<std::shared_ptr<INode>> m_nodes;
             };
 
             Iterator end() const noexcept {
@@ -195,7 +206,7 @@ namespace generic_trie {
 
             template<typename... PartialKey>
             Iterator find(const std::tuple<PartialKey...>& key) {
-                std::shared_ptr<Node> node = getNodeForPartialKey(key);
+                std::shared_ptr<INode> node = getNodeForPartialKey(key);
 
                 return Iterator{node};
             }
@@ -204,14 +215,14 @@ namespace generic_trie {
             Iterator find(PartialKey&&... key) {
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
-                std::shared_ptr<Node> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+                std::shared_ptr<INode> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
 
                 return Iterator{node};
             }
 
             template<typename... PartialKey>
             void erase(std::tuple<PartialKey...> key) {
-                std::shared_ptr<Node> node = getNodeForPartialKey(key);
+                std::shared_ptr<INode> node = getNodeForPartialKey(key);
 
                 // TODO: We should probably actually return the erased values as
                 //   well
@@ -224,48 +235,51 @@ namespace generic_trie {
 
         // protected:
             template<typename... PartialKey>
-            std::shared_ptr<Node> getNodeForPartialKey(const std::tuple<PartialKey...>& key,
+            std::shared_ptr<INode> getNodeForPartialKey(const std::tuple<PartialKey...>& key,
                                                                 bool createIfKeyDoesNotExist = false)
             {
                 return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{}, createIfKeyDoesNotExist);
             }
 
             template<typename T, std::size_t... Indices>
-            std::shared_ptr<Node> getNodeForPartialKey(const T& key,
-                                                                std::index_sequence<Indices...>,
-                                                                bool createIfKeyDoesNotExist = false)
+            std::shared_ptr<INode> getNodeForPartialKey(const T& key,
+                                                        std::index_sequence<Indices...> idx_seq,
+                                                        bool createIfKeyDoesNotExist = false)
             {
                 return getNodeForPartialKeyImpl(
                     std::make_tuple(makeWrapper( std::get<Indices>(key) )...),
+                    idx_seq,
                     createIfKeyDoesNotExist);
             }
 
-            template<typename... PartialKey>
-            std::shared_ptr<Node> getNodeForPartialKeyImpl(
+            template<typename... PartialKey, std::size_t... Indices>
+            std::shared_ptr<INode> getNodeForPartialKeyImpl(
                     const std::tuple<Wrapper<PartialKey>...>& key,
+                    std::index_sequence<Indices...> idx_seq,
                     bool createIfKeyDoesNotExist = false)
             {
-                std::shared_ptr<Node> node = root;
+                std::shared_ptr<INode> node = root;
 
                 std::apply([&](auto&&... args) {
-                    node = getNodeForPartialKeyImpl<PartialKey...>(args..., createIfKeyDoesNotExist);
+                    node = getNodeForPartialKeyImpl<PartialKey...>(args..., idx_seq, createIfKeyDoesNotExist);
                 }, key);
 
                 return node;
             }
 
 
-            template<typename... PartialKey>
-            std::shared_ptr<Node> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
-                                                           bool createIfKeyDoesNotExist = false)
+            template<typename... PartialKey, std::size_t... Indices>
+            std::shared_ptr<INode> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
+                                                            std::index_sequence<Indices...>,
+                                                            bool createIfKeyDoesNotExist = false)
             {
-                std::shared_ptr<Node> node = root;
+                std::shared_ptr<INode> node = root;
 
                 // If this is the first time ever trying to get a node, make
                 //   sure that we either return early or initialize root
                 if(node == nullptr) {
                     if(createIfKeyDoesNotExist) {
-                        root = node = std::make_shared<Node>();
+                        root = node = std::make_shared<Node<0>>();
                     } else {
                         return nullptr;
                     }
@@ -295,7 +309,7 @@ namespace generic_trie {
                     //  denote a lookup failure
                     if(children.count(key.value) == 0) {
                         if(createIfKeyDoesNotExist) {
-                            node = children[key.value] = std::make_shared<Node>();
+                            node = children[key.value] = std::make_shared<Node<Indices>>();
                         } else {
                             node = nullptr;
                         }
@@ -309,9 +323,9 @@ namespace generic_trie {
 
             template<typename T, typename... Types>
             auto getChildrenTypeFromTuple(std::tuple<Types...>& t)
-                -> typename Node::template ChildrenType<T>&
+                -> typename INode::template ChildrenType<T>&
             {
-                constexpr std::size_t Index = getIndexOfType<typename Node::template ChildrenType<T>, Types...>();
+                constexpr std::size_t Index = getIndexOfType<typename INode::template ChildrenType<T>, Types...>();
                 return std::get<Index>(t);
             }
 
@@ -326,7 +340,7 @@ namespace generic_trie {
 
 
         private:
-            std::shared_ptr<Node> root;
+            std::shared_ptr<INode> root;
     };
 }
 
