@@ -139,7 +139,20 @@ namespace generic_trie {
                     Iterator(std::shared_ptr<INode> node):
                         m_nodes()
                     {
-                        if(node != nullptr) m_nodes.push(node);
+                        if(node != nullptr) {
+                            m_nodes.push(node);
+
+                            // If the top node does not have a value, advance
+                            //   until one is found (For the case of partial
+                            //   keys, where a node is returned that does not
+                            //   hold a value because we are given one that is
+                            //   part of the way through a key)
+                            while(!m_nodes.empty() &&
+                                  !m_nodes.top()->data.has_value())
+                            {
+                                advance();
+                            }
+                        }
                     }
 
                     // End iterator, cannot be moved forward any more
@@ -170,7 +183,7 @@ namespace generic_trie {
                         return m_nodes.top()->data.value();
                     }
 
-                    const V& operator*() const {
+                    const typename INode::Data& operator*() const {
                         return m_nodes.top()->data.value();
                     }
 
@@ -219,6 +232,10 @@ namespace generic_trie {
                 private:
                     std::stack<std::shared_ptr<INode>> m_nodes;
             };
+
+            Iterator begin() const noexcept {
+                return Iterator{root};
+            }
 
             Iterator end() const noexcept {
                 return Iterator{};
