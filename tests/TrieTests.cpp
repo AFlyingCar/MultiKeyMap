@@ -196,6 +196,7 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
     ASSERT_EQ(result, 1);
 
     {
+        std::cout << "Lookup {5, 'c'}" << std::endl;
         auto it1 = trie.find(5, 'c');
         ASSERT_NE(it1, trie.end());
 
@@ -225,6 +226,7 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
     }
 
     {
+        std::cout << "Lookup {5}" << std::endl;
         auto it2 = trie.find(5);
         ASSERT_NE(it2, trie.end());
 
@@ -324,5 +326,70 @@ TEST(TrieTests, ValidateComplexTrieForEach) {
         ++count;
     }
     ASSERT_EQ(count, 5);
+}
+
+TEST(TrieTests, ValidateConstness) {
+    generic_trie::KTrie<float /* V */, int, char, bool> trie;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false)
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto result = trie.insert(keys[0], vals[0]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[1], vals[1]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[2], vals[2]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[3], vals[3]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[4], vals[4]);
+    ASSERT_EQ(result, 1);
+
+    const auto& const_trie = trie;
+    {
+        auto const_it = const_trie.find(5);
+
+        auto count = 0;
+        for(; const_it != const_trie.end(); ++const_it) {
+            auto&& [k,v] = *const_it;
+
+            std::cout << "{" << std::get<0>(k) << ", "
+                             << std::get<1>(k) << ", "
+                             << std::get<2>(k) << "} => " << v << std::endl;
+
+            ASSERT_EQ(k, keys[count]);
+            ASSERT_FLOAT_EQ(v, vals[count]);
+            ++count;
+        }
+        ASSERT_EQ(count, 4);
+
+        ////////
+
+        std::cout << "------ FOREACH ------" << std::endl;
+        count = 0;
+        for(auto&& [k,v] : trie) {
+            std::cout << "{" << std::get<0>(k) << ", "
+                             << std::get<1>(k) << ", "
+                             << std::get<2>(k) << "} => " << v << std::endl;
+
+            ASSERT_EQ(k, keys[count]);
+            ASSERT_FLOAT_EQ(v, vals[count]);
+            ++count;
+        }
+        ASSERT_EQ(count, 5);
+
+    }
 }
 
