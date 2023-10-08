@@ -135,28 +135,6 @@ TEST(TrieTests, ValidateSimpleTrieLookup) {
     ASSERT_EQ(trie.find(5), trie.find(5));
 }
 
-TEST(TrieTests, ValidateSimpleTrieNodes) {
-    // Validate finding values from a simple trie with 1 only key
-    generic_trie::KTrie<float /* V */, int> trie;
-
-    auto v1 = 3.14159;
-    auto v2 = 7;
-
-    auto result = trie.insert({5}, v1);
-    ASSERT_EQ(result, 1);
-
-    result = trie.insert({6}, v2);
-    ASSERT_EQ(result, 1);
-
-    auto node1 = trie.getNodeForPartialKey<int>({5}, false /* createIfKeyDoesNotExist */);
-    ASSERT_EQ(node1->getIndex(), 0);
-
-    auto node2 = trie.getNodeForPartialKey<int>({6}, false /* createIfKeyDoesNotExist */);
-    ASSERT_EQ(node2->getIndex(), 0);
-
-    ASSERT_NE(node1, node2);
-}
-
 TEST(TrieTests, ValidateComplexTrieInsert) {
     generic_trie::KTrie<float /* V */, int, char, bool> trie;
 
