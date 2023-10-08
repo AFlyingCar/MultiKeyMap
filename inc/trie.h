@@ -105,9 +105,10 @@ namespace generic_trie {
                 }
             }
 
-            class Iterator {
+            template<typename NodeType = Node>
+            class IteratorImpl {
                 public:
-                    Iterator(std::shared_ptr<Node> node):
+                    IteratorImpl(std::shared_ptr<NodeType> node):
                         m_nodes()
                     {
                         if(node != nullptr) {
@@ -127,9 +128,9 @@ namespace generic_trie {
                     }
 
                     // End iterator, cannot be moved forward any more
-                    Iterator(): m_nodes() { }
+                    IteratorImpl<NodeType>(): m_nodes() { }
 
-                    Iterator operator++() {
+                    IteratorImpl<NodeType> operator++() {
                         // Do not attempt to increment if we are at the end
                         if(m_nodes.empty()) {
                             return *this;
@@ -149,20 +150,13 @@ namespace generic_trie {
                         return *this;
                     }
 
-                    // The top element must _always_ have a value
-                    typename Node::Data& operator*() {
-                        return m_nodes.top()->data.value();
-                    }
-
-                    const typename Node::Data& operator*() const {
-                        return m_nodes.top()->data.value();
-                    }
-
-                    bool operator!=(const Iterator& it) const noexcept {
+                    bool operator!=(const IteratorImpl<NodeType>& it) const noexcept
+                    {
                         return !(*this == it);
                     }
 
-                    bool operator==(const Iterator& it) const noexcept {
+                    bool operator==(const IteratorImpl<NodeType>& it) const noexcept
+                    {
                         // TODO: Convert this into a boolean expression and
                         //   remove branching
                         if(isEnd() && it.isEnd()) {
@@ -181,11 +175,13 @@ namespace generic_trie {
                     }
 
                 protected:
+                    using NodeStack = std::stack<std::shared_ptr<NodeType>>;
+
                     // Will advance the nodes by 1
                     //   Pops the top node off the stack, adds all children to
                     //   the stack
                     // Assumes m_nodes is not empty
-                    void advance() {
+                    void advance() noexcept {
                         auto node = m_nodes.top();
                         m_nodes.pop();
 
@@ -200,32 +196,79 @@ namespace generic_trie {
                         });
                     }
 
+                    NodeStack& getNodeStack() noexcept {
+                        return m_nodes;
+                    }
+
+                    const NodeStack& getNodeStack() const noexcept {
+                        return m_nodes;
+                    }
+
                 private:
-                    std::stack<std::shared_ptr<Node>> m_nodes;
+                    NodeStack m_nodes;
             };
 
-            Iterator begin() const noexcept {
+            struct Iterator: public IteratorImpl<Node> {
+                std::pair<const Key&, V&> operator*() const noexcept {
+                    return {
+                        this->getNodeStack().top()->data.value().first,
+                        this->getNodeStack().top()->data.value().second
+                    };
+                }
+            };
+
+            struct ConstIterator: public IteratorImpl<const Node> {
+                std::pair<const Key&, const V&> operator*() const noexcept {
+                    return {
+                        this->getNodeStack().top()->data.value().first,
+                        this->getNodeStack().top()->data.value().second
+                    };
+                }
+            };
+
+            ConstIterator begin() const noexcept {
+                return ConstIterator{root};
+            }
+
+            ConstIterator end() const noexcept {
+                return ConstIterator{};
+            }
+
+            Iterator begin() noexcept {
                 return Iterator{root};
             }
 
-            Iterator end() const noexcept {
+            Iterator end() noexcept {
                 return Iterator{};
             }
 
+            // TODO: This overload is broken. Compiler gets into an endless loop if forced.
+            //   FIX THIS
             template<typename... PartialKey>
-            Iterator find(const std::tuple<PartialKey...>& key) {
-                std::shared_ptr<INode> node = getNodeForPartialKey(key);
+            Iterator find(const std::tuple<PartialKey...>& key) noexcept {
+                std::shared_ptr<Node> node = getNodeForPartialKey(key);
 
                 return Iterator{node};
             }
 
             template<typename... PartialKey>
-            Iterator find(PartialKey&&... key) {
+            Iterator find(PartialKey&&... key) noexcept {
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
                 std::shared_ptr<Node> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
 
                 return Iterator{node};
+            }
+
+            ///////
+
+            template<typename... PartialKey>
+            ConstIterator find(PartialKey&&... key) const noexcept {
+                std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
+
+                std::shared_ptr<const Node> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+
+                return ConstIterator{node};
             }
 
             template<typename... PartialKey>
@@ -241,10 +284,83 @@ namespace generic_trie {
                 }(), ...);
             }
 
-        // protected:
+        protected:
+            template<typename... PartialKey>
+            std::shared_ptr<const Node>
+                getNodeForPartialKey(const std::tuple<PartialKey...>& key) const noexcept
+            {
+                return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{});
+            }
+
+            template<typename T, std::size_t... Indices>
+            std::shared_ptr<const Node> getNodeForPartialKey(const T& key,
+                                                             std::index_sequence<Indices...>) const noexcept
+            {
+                return getNodeForPartialKeyImpl(
+                    std::make_tuple(makeWrapper( std::get<Indices>(key) )...));
+            }
+
+            template<typename... PartialKey>
+            std::shared_ptr<const Node>
+                getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
+            {
+                std::shared_ptr<const Node> node = root;
+
+                std::apply([&](auto&&... args) {
+                    node = getNodeForPartialKeyImpl<PartialKey...>(args...);
+                }, key);
+
+                return node;
+            }
+
+            template<typename... PartialKey>
+            std::shared_ptr<const Node> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key) const noexcept
+            {
+                std::shared_ptr<const Node> node = root;
+
+                // If this is the first time ever trying to get a node, make
+                //   sure that we either return early or initialize root
+                if(node == nullptr) {
+                    return nullptr;
+                }
+
+                // for every part of the key
+                // Note: we can skip the std::apply if we don't accept the key
+                //   as a tuple
+                // We may want to only accept by tuple though, to make the
+                //   API simpler
+                // Return a boolean to allow us to use short-circuiting to skip
+                //   any further calls to this function if we need to stop early
+                ([&] {
+                    using ArgType = decltype(key);
+                    using RawType = typename std::decay_t<ArgType>::Type;
+
+                    // Stop early if node is null
+                    if(node == nullptr) { return false; }
+
+                    // Find the correct 'children' for this type
+                    // Children are stored in a tuple of hashmap<T, shared_ptr<Node> >
+                    const auto& children = getChildrenTypeFromTuple<RawType>(node->children);
+
+                    // If the node for this key value doesn't exist, then set
+                    //  'node' to null to denote a lookup failure
+                    if(children.count(key.value) == 0) {
+                        return false;
+                    } else {
+                        node = children.at(key.value);
+                    }
+
+                    return true;
+                }() && ...);
+
+                return node;
+            }
+
+            ////////
+
             template<typename... PartialKey>
             std::shared_ptr<Node> getNodeForPartialKey(const std::tuple<PartialKey...>& key,
-                                                        bool createIfKeyDoesNotExist = false)
+                                                        bool createIfKeyDoesNotExist = false) noexcept
             {
                 return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{}, createIfKeyDoesNotExist);
             }
@@ -252,7 +368,7 @@ namespace generic_trie {
             template<typename T, std::size_t... Indices>
             std::shared_ptr<Node> getNodeForPartialKey(const T& key,
                                                        std::index_sequence<Indices...>,
-                                                       bool createIfKeyDoesNotExist = false)
+                                                       bool createIfKeyDoesNotExist = false) noexcept
             {
                 return getNodeForPartialKeyImpl(
                     std::make_tuple(makeWrapper( std::get<Indices>(key) )...),
@@ -273,8 +389,7 @@ namespace generic_trie {
                 return node;
             }
 
-
-            template<typename... PartialKey, std::size_t... Indices>
+            template<typename... PartialKey>
             std::shared_ptr<Node> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
                                                            bool createIfKeyDoesNotExist = false)
             {
@@ -295,15 +410,14 @@ namespace generic_trie {
                 //   as a tuple
                 // We may want to only accept by tuple though, to make the
                 //   API simpler
+                // Return a boolean to allow us to use short-circuiting to skip
+                //   any further calls to this function if we need to stop early
                 ([&] {
                     using ArgType = decltype(key);
                     using RawType = typename std::decay_t<ArgType>::Type;
 
                     // Stop early if node is null
-                    //   TODO: Is there actually a way to stop iterating
-                    //   early rather than just doing nothing for the rest
-                    //   of the iterations?
-                    if(node == nullptr) { return; }
+                    if(node == nullptr) { return false; }
 
                     // Find the correct 'children' for this type
                     // Children are stored in a tuple of hashmap<T, shared_ptr<Node> >
@@ -321,28 +435,28 @@ namespace generic_trie {
                     } else {
                         node = children[key.value];
                     }
-                }(), ...);
+
+                    return true;
+                }() && ...);
 
                 return node;
             }
 
             template<typename T, typename... Types>
-            auto getChildrenTypeFromTuple(std::tuple<Types...>& t)
+            auto getChildrenTypeFromTuple(std::tuple<Types...>& t) noexcept
                 -> typename Node::template ChildrenType<T>&
             {
                 constexpr std::size_t Index = getIndexOfType<typename Node::template ChildrenType<T>, Types...>();
                 return std::get<Index>(t);
             }
 
-            // template<typename T, typename... Types>
-            // auto getChildrenTypeFromTuple(const std::tuple<Types...>& t) const
-            //     -> typename Node::template ChildrenType<T>&
-            // {
-            //     constexpr std::size_t Index = getIndexOfType<typename Node::template ChildrenType<T>, Types...>();
-            //     return std::get<Index>(t);
-            // }
-
-
+            template<typename T, typename... Types>
+            auto getChildrenTypeFromTuple(const std::tuple<Types...>& t) const noexcept
+                -> const typename Node::template ChildrenType<T>&
+            {
+                constexpr std::size_t Index = getIndexOfType<typename Node::template ChildrenType<T>, Types...>();
+                return std::get<Index>(t);
+            }
 
         private:
             std::shared_ptr<Node> root;
