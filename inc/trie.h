@@ -83,6 +83,10 @@ namespace mkm {
                 std::optional<Value> data;
             };
 
+            //! Helper type alias for access a Node's children type
+            template<typename T>
+            using NodeChildren = typename Node::template ChildrenType<T>;
+
         public:
             /**
              * @brief A light-weight wrapper around a value of a given type
@@ -669,10 +673,9 @@ namespace mkm {
              * @return A specific children map from 't' corresponding to the type T
              */
             template<typename T, typename... Types>
-            auto getChildrenTypeFromTuple(std::tuple<Types...>& t) noexcept
-                -> typename Node::template ChildrenType<T>&
+            NodeChildren<T>& getChildrenTypeFromTuple(std::tuple<Types...>& t) noexcept
             {
-                constexpr std::size_t Index = getIndexOfType<typename Node::template ChildrenType<T>, Types...>();
+                constexpr std::size_t Index = getIndexOfType<NodeChildren<T>, Types...>();
                 return std::get<Index>(t);
             }
 
@@ -687,10 +690,9 @@ namespace mkm {
              * @return A specific children map from 't' corresponding to the type T
              */
             template<typename T, typename... Types>
-            auto getChildrenTypeFromTuple(const std::tuple<Types...>& t) const noexcept
-                -> const typename Node::template ChildrenType<T>&
+            const NodeChildren<T>& getChildrenTypeFromTuple(const std::tuple<Types...>& t) const noexcept
             {
-                constexpr std::size_t Index = getIndexOfType<typename Node::template ChildrenType<T>, Types...>();
+                constexpr std::size_t Index = getIndexOfType<NodeChildren<T>, Types...>();
                 return std::get<Index>(t);
             }
 
