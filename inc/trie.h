@@ -23,39 +23,11 @@ namespace mkm {
             using reference = value_type&;
             using const_reference = const value_type&;
 
-            /**
-             * @brief A light-weight wrapper around a value of a given type
-             *
-             * @tparam T The type to wrap
-             */
-            template<typename T>
-            struct Wrapper {
-                //! The raw type being wrapped.
-                using Type = std::decay_t<T>;
+        protected:
+            struct Node;
 
-                //! The value being wrapped
-                Type value;
-            };
-
-            /**
-             * @brief Helper function to create a Wrapper object
-             *
-             * @tparam T The type to wrap
-             * @param t The value to wrap
-             *
-             * @return A new Wrapper<T> object around 't'
-             */
-            template<typename T>
-            static Wrapper<T> makeWrapper(const T& t) {
-                return Wrapper<RemoveCVRef_t<T>>{t};
-            }
-
-            /**
-             * @brief Constructs a new empty MultiKeyMap
-             */
-            MultiKeyMap():
-                root(new Node{})
-            { }
+            using NodePtr = std::shared_ptr<Node>;
+            using ConstNodePtr = std::shared_ptr<const Node>;
 
             /**
              * @brief Defines a single node in a Trie.
@@ -100,7 +72,7 @@ namespace mkm {
              */
             struct Node {
                 template<typename T>
-                using ChildrenType = std::unordered_map<T, std::shared_ptr<Node>>;
+                using ChildrenType = std::unordered_map<T, NodePtr>;
 
                 // There can be a set of children for each remaining part of the key
                 std::tuple< ChildrenType<Keys>... > children;
@@ -110,6 +82,41 @@ namespace mkm {
                 // Value is optional as one is only held if this is a leaf
                 std::optional<Value> data;
             };
+
+        public:
+            /**
+             * @brief A light-weight wrapper around a value of a given type
+             *
+             * @tparam T The type to wrap
+             */
+            template<typename T>
+            struct Wrapper {
+                //! The raw type being wrapped.
+                using Type = std::decay_t<T>;
+
+                //! The value being wrapped
+                Type value;
+            };
+
+            /**
+             * @brief Helper function to create a Wrapper object
+             *
+             * @tparam T The type to wrap
+             * @param t The value to wrap
+             *
+             * @return A new Wrapper<T> object around 't'
+             */
+            template<typename T>
+            static Wrapper<T> makeWrapper(const T& t) {
+                return Wrapper<RemoveCVRef_t<T>>{t};
+            }
+
+            /**
+             * @brief Constructs a new empty MultiKeyMap
+             */
+            MultiKeyMap():
+                root(new Node{})
+            { }
 
             /**
              * @brief Inserts a value into the trie. Only full keys are allowed.
@@ -123,7 +130,7 @@ namespace mkm {
              *         otherwise.
              */
             bool insert(const key_type& key, const V& value) {
-                std::shared_ptr<Node> node = getNodeForPartialKey<Keys...>(key, true);
+                NodePtr node = getNodeForPartialKey<Keys...>(key, true);
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
@@ -144,13 +151,20 @@ namespace mkm {
              */
             template<typename NodeType = Node>
             class IteratorImpl {
+                protected:
+                    //! Helper type alisas
+                    using IterNodePtr = std::shared_ptr<NodeType>;
+
+                    //! Helper type alias for m_nodes
+                    using NodeStack = std::stack<IterNodePtr>;
+
                 public:
                     /**
                      * @brief Builds a new Iterator starting at the given node
                      *
                      * @param node The node to start iterating from.
                      */
-                    IteratorImpl(std::shared_ptr<NodeType> node):
+                    IteratorImpl(IterNodePtr node):
                         m_nodes()
                     {
                         if(node != nullptr) {
@@ -248,9 +262,6 @@ namespace mkm {
                     }
 
                 protected:
-                    //! Helper type alias for m_nodes
-                    using NodeStack = std::stack<std::shared_ptr<NodeType>>;
-
                     /**
                      * @brief Advances the iterator by one node.
                      * @details Performs one single step of a breadth-first
@@ -351,7 +362,7 @@ namespace mkm {
             //   FIX THIS
             template<typename... PartialKey>
             Iterator find(const std::tuple<PartialKey...>& key) noexcept {
-                std::shared_ptr<Node> node = getNodeForPartialKey(key);
+                NodePtr node = getNodeForPartialKey(key);
 
                 return Iterator{node};
             }
@@ -377,7 +388,7 @@ namespace mkm {
             Iterator find(PartialKey&&... key) noexcept {
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
-                std::shared_ptr<Node> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+                NodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
 
                 return Iterator{node};
             }
@@ -398,7 +409,7 @@ namespace mkm {
             ConstIterator find(PartialKey&&... key) const noexcept {
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
-                std::shared_ptr<const Node> node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+                ConstNodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
 
                 return ConstIterator{node};
             }
@@ -411,7 +422,7 @@ namespace mkm {
              */
             template<typename... PartialKey>
             void erase(std::tuple<PartialKey...> key) {
-                std::shared_ptr<Node> node = getNodeForPartialKey(key);
+                NodePtr node = getNodeForPartialKey(key);
 
                 // TODO: We should probably actually return the erased values as
                 //   well
@@ -432,8 +443,7 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename... PartialKey>
-            std::shared_ptr<const Node>
-                getNodeForPartialKey(const std::tuple<PartialKey...>& key) const noexcept
+            ConstNodePtr getNodeForPartialKey(const std::tuple<PartialKey...>& key) const noexcept
             {
                 return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{});
             }
@@ -450,8 +460,8 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename T, std::size_t... Indices>
-            std::shared_ptr<const Node> getNodeForPartialKey(const T& key,
-                                                             std::index_sequence<Indices...>) const noexcept
+            ConstNodePtr getNodeForPartialKey(const T& key,
+                                              std::index_sequence<Indices...>) const noexcept
             {
                 return getNodeForPartialKeyImpl(
                     std::make_tuple(makeWrapper( std::get<Indices>(key) )...));
@@ -466,9 +476,9 @@ namespace mkm {
              * @return  A shared_ptr to the node for the given key.
              */
             template<typename... PartialKey>
-            std::shared_ptr<const Node> getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
+            ConstNodePtr getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
             {
-                std::shared_ptr<const Node> node = root;
+                ConstNodePtr node = root;
 
                 std::apply([&](auto&&... args) {
                     node = getNodeForPartialKeyImpl<PartialKey...>(args...);
@@ -486,9 +496,9 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename... PartialKey>
-            std::shared_ptr<const Node> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key) const noexcept
+            ConstNodePtr getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key) const noexcept
             {
-                std::shared_ptr<const Node> node = root;
+                ConstNodePtr node = root;
 
                 // If this is the first time ever trying to get a node, make
                 //   sure that we either return early or initialize root
@@ -539,8 +549,8 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename... PartialKey>
-            std::shared_ptr<Node> getNodeForPartialKey(const std::tuple<PartialKey...>& key,
-                                                        bool createIfKeyDoesNotExist = false) noexcept
+            NodePtr getNodeForPartialKey(const std::tuple<PartialKey...>& key,
+                                         bool createIfKeyDoesNotExist = false) noexcept
             {
                 return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{}, createIfKeyDoesNotExist);
             }
@@ -557,9 +567,9 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename T, std::size_t... Indices>
-            std::shared_ptr<Node> getNodeForPartialKey(const T& key,
-                                                       std::index_sequence<Indices...>,
-                                                       bool createIfKeyDoesNotExist = false) noexcept
+            NodePtr getNodeForPartialKey(const T& key,
+                                         std::index_sequence<Indices...>,
+                                         bool createIfKeyDoesNotExist = false) noexcept
             {
                 return getNodeForPartialKeyImpl(
                     std::make_tuple(makeWrapper( std::get<Indices>(key) )...),
@@ -575,11 +585,10 @@ namespace mkm {
              * @return  A shared_ptr to the node for the given key.
              */
             template<typename... PartialKey>
-            std::shared_ptr<Node> getNodeForPartialKeyImpl(
-                    const std::tuple<Wrapper<PartialKey>...>& key,
-                    bool createIfKeyDoesNotExist = false)
+            NodePtr getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key,
+                                             bool createIfKeyDoesNotExist = false)
             {
-                std::shared_ptr<Node> node = root;
+                NodePtr node = root;
 
                 std::apply([&](auto&&... args) {
                     node = getNodeForPartialKeyImpl<PartialKey...>(args..., createIfKeyDoesNotExist);
@@ -597,10 +606,10 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename... PartialKey>
-            std::shared_ptr<Node> getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
-                                                           bool createIfKeyDoesNotExist = false)
+            NodePtr getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
+                                             bool createIfKeyDoesNotExist = false)
             {
-                std::shared_ptr<Node> node = root;
+                NodePtr node = root;
 
                 // If this is the first time ever trying to get a node, make
                 //   sure that we either return early or initialize root
@@ -687,7 +696,7 @@ namespace mkm {
 
         private:
             //! The root node
-            std::shared_ptr<Node> root;
+            NodePtr root;
     };
 }
 
