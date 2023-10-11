@@ -28,7 +28,7 @@ TEST(TrieTests, GetIndexOfTypeTests) {
 
 TEST(TrieTests, ValidateSimpleTrieInsert) {
     // Validate inserting into a simple trie with 1 only key
-    generic_trie::KTrie<float /* V */, int> trie;
+    mkm::MultiKeyMap<float /* V */, int> trie;
 
     auto result = trie.insert({5}, 3.14159);
     ASSERT_EQ(result, 1);
@@ -42,7 +42,7 @@ TEST(TrieTests, ValidateSimpleTrieInsert) {
 
 TEST(TrieTests, ValidateSimpleTrieLookup) {
     // Validate finding values from a simple trie with 1 only key
-    generic_trie::KTrie<float /* V */, int> trie;
+    mkm::MultiKeyMap<float /* V */, int> trie;
 
     auto key1 = std::make_tuple(5);
     auto key2 = std::make_tuple(6);
@@ -102,7 +102,7 @@ TEST(TrieTests, ValidateSimpleTrieLookup) {
 }
 
 TEST(TrieTests, ValidateComplexTrieInsert) {
-    generic_trie::KTrie<float /* V */, int, char, bool> trie;
+    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
 
     auto key1 = std::make_tuple(5, 'c', true);
 
@@ -132,7 +132,7 @@ TEST(TrieTests, ValidateComplexTrieInsert) {
 }
 
 TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
-    generic_trie::KTrie<float /* V */, int, char, bool> trie;
+    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
 
     auto key1 = std::make_tuple(5, 'c', true);
     auto key2 = std::make_tuple(5, 'c', false);
@@ -237,7 +237,7 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
 }
 
 TEST(TrieTests, ValidateComplexTrieForEach) {
-    generic_trie::KTrie<float /* V */, int, char, bool> trie;
+    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -295,7 +295,7 @@ TEST(TrieTests, ValidateComplexTrieForEach) {
 }
 
 TEST(TrieTests, ValidateConstness) {
-    generic_trie::KTrie<float /* V */, int, char, bool> trie;
+    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),

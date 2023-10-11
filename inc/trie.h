@@ -12,9 +12,9 @@
 
 # include "Index.h"
 
-namespace generic_trie {
+namespace mkm {
     template<typename V, typename... Keys>
-    class KTrie {
+    class MultiKeyMap {
         public:
             //! The full key type
             using Key = std::tuple<Keys...>;
@@ -54,9 +54,9 @@ namespace generic_trie {
             }
 
             /**
-             * @brief Constructs a new empty KTrie
+             * @brief Constructs a new empty MultiKeyMap
              */
-            KTrie():
+            MultiKeyMap():
                 root(new Node{})
             { }
 
