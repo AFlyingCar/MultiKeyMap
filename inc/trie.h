@@ -87,7 +87,6 @@ namespace mkm {
             template<typename T>
             using NodeChildren = typename Node::template ChildrenType<T>;
 
-        public:
             /**
              * @brief A light-weight wrapper around a value of a given type
              *
@@ -115,6 +114,7 @@ namespace mkm {
                 return Wrapper<RemoveCVRef_t<T>>{t};
             }
 
+        public:
             /**
              * @brief Constructs a new empty MultiKeyMap
              */
