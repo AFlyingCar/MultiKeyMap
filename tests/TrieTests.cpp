@@ -26,40 +26,6 @@ TEST(TrieTests, GetIndexOfTypeTests) {
     std::cout << "I5=" << I5 << std::endl;
 }
 
-TEST(TrieTests, TupleSplitTests) {
-    auto t1 = std::make_tuple(0, 1, 2, 3, 4, 5);
-    auto t1_tail = tupleTail<2>(t1);
-    std::cout << "len(t1_tail)=" << std::tuple_size_v<decltype(t1_tail)> << std::endl;
-    std::cout << "\t0: " << std::get<0>(t1_tail) << std::endl
-              << "\t1: " << std::get<1>(t1_tail) << std::endl
-              << "\t2: " << std::get<2>(t1_tail) << std::endl
-              << "\t3: " << std::get<3>(t1_tail) << std::endl
-              ;
-
-    auto t1_head = tupleHead<2>(t1);
-    std::cout << "len(t1_head)=" << std::tuple_size_v<decltype(t1_head)> << std::endl;
-    std::cout << "\t0: " << std::get<0>(t1_head) << std::endl
-              << "\t1: " << std::get<1>(t1_head) << std::endl
-              << "\t2: " << std::get<2>(t1_head) << std::endl
-              ;
-
-    auto t1_split = splitTuple<2>(t1);
-    std::cout << "len(t1_split)={"
-        << std::tuple_size_v<decltype(t1_split.first)> << ','
-        << std::tuple_size_v<decltype(t1_split.second)> << '}'
-        << std::endl;
-
-    std::cout << "\tfirst:0: " << std::get<0>(t1_split.first) << std::endl
-              << "\tfirst:1: " << std::get<1>(t1_split.first) << std::endl
-              ;
-
-    std::cout << "\tsecond0: " << std::get<0>(t1_split.second) << std::endl
-              << "\tsecond1: " << std::get<1>(t1_split.second) << std::endl
-              << "\tsecond2: " << std::get<2>(t1_split.second) << std::endl
-              << "\tsecond3: " << std::get<3>(t1_split.second) << std::endl
-              ;
-}
-
 TEST(TrieTests, ValidateSimpleTrieInsert) {
     // Validate inserting into a simple trie with 1 only key
     generic_trie::KTrie<float /* V */, int> trie;
