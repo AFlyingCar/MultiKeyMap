@@ -16,12 +16,9 @@ namespace mkm {
     template<typename V, typename... Keys>
     class MultiKeyMap {
         public:
-            //! The full key type
-            using Key = std::tuple<Keys...>;
-
             using key_type = std::tuple<Keys...>;
             using mapped_type = V;
-            using value_type = std::pair<Key, V>;
+            using value_type = std::pair<key_type, V>;
             using size_type = std::size_t;
             using reference = value_type&;
             using const_reference = const value_type&;
@@ -108,10 +105,10 @@ namespace mkm {
                 // There can be a set of children for each remaining part of the key
                 std::tuple< ChildrenType<Keys>... > children;
 
-                using Data = std::pair<Key, V>;
+                using Value = std::pair<key_type, mapped_type>;
 
                 // Value is optional as one is only held if this is a leaf
-                std::optional<Data> data;
+                std::optional<Value> data;
             };
 
             /**
@@ -125,13 +122,13 @@ namespace mkm {
              * @return True if the value was inserted successfully, false
              *         otherwise.
              */
-            bool insert(const Key& key, const V& value) {
+            bool insert(const key_type& key, const V& value) {
                 std::shared_ptr<Node> node = getNodeForPartialKey<Keys...>(key, true);
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
                 if(node->data == std::nullopt) {
-                    node->data = { key, value};
+                    node->data = { key, value };
                     return true;
                 } else {
                     return false;
@@ -303,11 +300,8 @@ namespace mkm {
                  *
                  * @return The currently looked at key and value.
                  */
-                std::pair<const Key&, V&> operator*() const noexcept {
-                    return {
-                        this->getNodeStack().top()->data.value().first,
-                        this->getNodeStack().top()->data.value().second
-                    };
+                value_type& operator*() const noexcept {
+                    return this->getNodeStack().top()->data.value();
                 }
             };
 
@@ -320,11 +314,8 @@ namespace mkm {
                  *
                  * @return The currently looked at key and value.
                  */
-                std::pair<const Key&, const V&> operator*() const noexcept {
-                    return {
-                        this->getNodeStack().top()->data.value().first,
-                        this->getNodeStack().top()->data.value().second
-                    };
+                const value_type& operator*() const noexcept {
+                    return this->getNodeStack().top()->data.value();
                 }
             };
 
@@ -475,8 +466,7 @@ namespace mkm {
              * @return  A shared_ptr to the node for the given key.
              */
             template<typename... PartialKey>
-            std::shared_ptr<const Node>
-                getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
+            std::shared_ptr<const Node> getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
             {
                 std::shared_ptr<const Node> node = root;
 
