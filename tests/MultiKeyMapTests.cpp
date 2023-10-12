@@ -4,9 +4,7 @@
 
 #define _MKM_DEBUG_OUTPUT std::cerr << "[   MKM   ] "
 
-// TODO: Combine these into a single main MultiKeyMap.h file
 #include "MultiKeyMap.h"
-#include "Index.h"
 
 TEST(MultiKeyMapTests, GetIndexOfTypeTests) {
     constexpr std::size_t I1 = mkm::detail::getIndexOfType<int, int, float, char, int>();
