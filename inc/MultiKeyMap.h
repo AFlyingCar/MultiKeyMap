@@ -140,7 +140,7 @@ namespace mkm {
             { }
 
             /**
-             * @brief Inserts a value into the trie. Only full keys are allowed.
+             * @brief Inserts a value into the map. Only full keys are allowed.
              *        Will not insert the value if something already exists for
              *        that key.
              *
@@ -373,28 +373,28 @@ namespace mkm {
             };
 
             /**
-             * @brief Returns a ConstIterator to the beginning of the trie.
+             * @brief Returns a ConstIterator to the beginning of the map.
              */
             ConstIterator begin() const noexcept {
                 return ConstIterator{root};
             }
 
             /**
-             * @brief Returns a ConstIterator to the end of the trie.
+             * @brief Returns a ConstIterator to the end of the map.
              */
             ConstIterator end() const noexcept {
                 return ConstIterator{};
             }
 
             /**
-             * @brief Returns a Iterator to the beginning of the trie.
+             * @brief Returns a Iterator to the beginning of the map.
              */
             Iterator begin() noexcept {
                 return Iterator{root};
             }
 
             /**
-             * @brief Returns a Iterator to the beginning of the trie.
+             * @brief Returns a Iterator to the beginning of the map.
              */
             Iterator end() noexcept {
                 return Iterator{};
@@ -410,7 +410,7 @@ namespace mkm {
             }
 
             /**
-             * @brief Finds all values in the trie that match the given key.
+             * @brief Finds all values in the map that match the given key.
              * @details \c key can be only partially provided, so long as they
              *          are in the same order as <tt>Keys...</tt> and so long as
              *          no parts of the key are skipped.
@@ -439,7 +439,7 @@ namespace mkm {
             ///////
 
             /**
-             * @brief Finds all values in the trie that match the given key.
+             * @brief Finds all values in the map that match the given key.
              * @details For specific details on how this works, see non-const
              *          find(PartialKey...).
              *
