@@ -4,11 +4,11 @@
 
 #define _MKM_DEBUG_OUTPUT std::cerr << "[   MKM   ] "
 
-// TODO: Combine these into a single main Trie.h file
-#include "trie.h"
+// TODO: Combine these into a single main MultiKeyMap.h file
+#include "MultiKeyMap.h"
 #include "Index.h"
 
-TEST(TrieTests, GetIndexOfTypeTests) {
+TEST(MultiKeyMapTests, GetIndexOfTypeTests) {
     constexpr std::size_t I1 = getIndexOfType<int, int, float, char, int>();
     std::cout << "I1=" << I1 << std::endl;
 
@@ -28,23 +28,23 @@ TEST(TrieTests, GetIndexOfTypeTests) {
     std::cout << "I5=" << I5 << std::endl;
 }
 
-TEST(TrieTests, ValidateSimpleTrieInsert) {
-    // Validate inserting into a simple trie with 1 only key
-    mkm::MultiKeyMap<float /* V */, int> trie;
+TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapInsert) {
+    // Validate inserting into a simple multiKeyMap with 1 only key
+    mkm::MultiKeyMap<float /* V */, int> multiKeyMap;
 
-    auto result = trie.insert({5}, 3.14159);
+    auto result = multiKeyMap.insert({5}, 3.14159);
     ASSERT_EQ(result, 1);
 
-    result = trie.insert({6}, 7);
+    result = multiKeyMap.insert({6}, 7);
     ASSERT_EQ(result, 1);
 
-    result = trie.insert({6}, 7);
+    result = multiKeyMap.insert({6}, 7);
     ASSERT_EQ(result, 0);
 }
 
-TEST(TrieTests, ValidateSimpleTrieLookup) {
-    // Validate finding values from a simple trie with 1 only key
-    mkm::MultiKeyMap<float /* V */, int> trie;
+TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapLookup) {
+    // Validate finding values from a simple multiKeyMap with 1 only key
+    mkm::MultiKeyMap<float /* V */, int> multiKeyMap;
 
     auto key1 = std::make_tuple(5);
     auto key2 = std::make_tuple(6);
@@ -52,15 +52,15 @@ TEST(TrieTests, ValidateSimpleTrieLookup) {
     auto v1 = 3.14159;
     auto v2 = 7;
 
-    auto result = trie.insert({5}, v1);
+    auto result = multiKeyMap.insert({5}, v1);
     ASSERT_EQ(result, 1);
 
-    result = trie.insert({6}, v2);
+    result = multiKeyMap.insert({6}, v2);
     ASSERT_EQ(result, 1);
 
     // Lookup with variadic version
-    auto it = trie.find(5);
-    ASSERT_NE(it, trie.end()); // Test iterator comparison and that we actually found the value
+    auto it = multiKeyMap.find(5);
+    ASSERT_NE(it, multiKeyMap.end()); // Test iterator comparison and that we actually found the value
 
     auto&& [it_key1, it_v1] = *it;
 
@@ -70,17 +70,17 @@ TEST(TrieTests, ValidateSimpleTrieLookup) {
     // Advance the iterator
     ++it;
     ASSERT_TRUE(it.isEnd());
-    ASSERT_EQ(it, trie.end()); // Test that the iterator got advanced and is at the end
+    ASSERT_EQ(it, multiKeyMap.end()); // Test that the iterator got advanced and is at the end
 
     // Verify that we can still advance and that doing so just spins in-place
     ++it;
     ASSERT_TRUE(it.isEnd());
-    ASSERT_EQ(it, trie.end());
+    ASSERT_EQ(it, multiKeyMap.end());
 
 
     // Lookup other value
-    auto it2 = trie.find(6);
-    ASSERT_NE(it2, trie.end()); // Test iterator comparison and that we actually found the value
+    auto it2 = multiKeyMap.find(6);
+    ASSERT_NE(it2, multiKeyMap.end()); // Test iterator comparison and that we actually found the value
 
     auto&& [it_key2, it_v2] = *it2;
 
@@ -90,32 +90,32 @@ TEST(TrieTests, ValidateSimpleTrieLookup) {
     // Advance the iterator
     ++it2;
     ASSERT_TRUE(it2.isEnd());
-    ASSERT_EQ(it2, trie.end()); // Test that the iterator got advanced and is at the end
+    ASSERT_EQ(it2, multiKeyMap.end()); // Test that the iterator got advanced and is at the end
 
 
     // Lookup non-existant value
-    auto it3 = trie.find(0);
+    auto it3 = multiKeyMap.find(0);
     ASSERT_TRUE(it3.isEnd());
-    ASSERT_EQ(it3, trie.end()); // Test iterator comparison and that we actually found the value
+    ASSERT_EQ(it3, multiKeyMap.end()); // Test iterator comparison and that we actually found the value
 
 
     // Make sure that iterators can be compared to each other.
-    ASSERT_EQ(trie.find(5), trie.find(5));
+    ASSERT_EQ(multiKeyMap.find(5), multiKeyMap.find(5));
 }
 
-TEST(TrieTests, ValidateComplexTrieInsert) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInsert) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     auto key1 = std::make_tuple(5, 'c', true);
 
     auto v1 = 3.14159;
     auto v2 = 7;
 
-    auto result = trie.insert({5, 'c', true}, v1);
+    auto result = multiKeyMap.insert({5, 'c', true}, v1);
     ASSERT_EQ(result, 1);
 
-    auto it1 = trie.find(5, 'c', true);
-    ASSERT_NE(it1, trie.end());
+    auto it1 = multiKeyMap.find(5, 'c', true);
+    ASSERT_NE(it1, multiKeyMap.end());
 
     auto&& [it_key1, it_v1] = *it1;
 
@@ -125,16 +125,16 @@ TEST(TrieTests, ValidateComplexTrieInsert) {
     // Advance the iterator
     ++it1;
     ASSERT_TRUE(it1.isEnd());
-    ASSERT_EQ(it1, trie.end()); // Test that the iterator got advanced and is at the end
+    ASSERT_EQ(it1, multiKeyMap.end()); // Test that the iterator got advanced and is at the end
 
     // Verify that we can still advance and that doing so just spins in-place
     ++it1;
     ASSERT_TRUE(it1.isEnd());
-    ASSERT_EQ(it1, trie.end());
+    ASSERT_EQ(it1, multiKeyMap.end());
 }
 
-TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapPartialKeyLookup) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     auto key1 = std::make_tuple(5, 'c', true);
     auto key2 = std::make_tuple(5, 'c', false);
@@ -152,21 +152,21 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
     auto v4 = 4;
     auto v5 = 5;
 
-    auto result = trie.insert(key1, v1);
+    auto result = multiKeyMap.insert(key1, v1);
     ASSERT_EQ(result, 1);
-    result = trie.insert(key2, v2);
+    result = multiKeyMap.insert(key2, v2);
     ASSERT_EQ(result, 1);
-    result = trie.insert(key3, v3);
+    result = multiKeyMap.insert(key3, v3);
     ASSERT_EQ(result, 1);
-    result = trie.insert(key4, v4);
+    result = multiKeyMap.insert(key4, v4);
     ASSERT_EQ(result, 1);
-    result = trie.insert(key5, v5);
+    result = multiKeyMap.insert(key5, v5);
     ASSERT_EQ(result, 1);
 
     {
         std::cout << "Lookup {5, 'c'}" << std::endl;
-        auto it1 = trie.find(5, 'c');
-        ASSERT_NE(it1, trie.end());
+        auto it1 = multiKeyMap.find(5, 'c');
+        ASSERT_NE(it1, multiKeyMap.end());
 
         auto&& [it_key1, it_v1] = *it1;
 
@@ -175,7 +175,7 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
 
         // It1 should return us 2 values
         ++it1;
-        ASSERT_NE(it1, trie.end());
+        ASSERT_NE(it1, multiKeyMap.end());
 
         auto&& [it_key2, it_v2] = *it1;
 
@@ -185,18 +185,18 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
         // Advance the iterator
         ++it1;
         ASSERT_TRUE(it1.isEnd());
-        ASSERT_EQ(it1, trie.end()); // Test that the iterator got advanced and is at the end
+        ASSERT_EQ(it1, multiKeyMap.end()); // Test that the iterator got advanced and is at the end
 
         // Verify that we can still advance and that doing so just spins in-place
         ++it1;
         ASSERT_TRUE(it1.isEnd());
-        ASSERT_EQ(it1, trie.end());
+        ASSERT_EQ(it1, multiKeyMap.end());
     }
 
     {
         std::cout << "Lookup {5}" << std::endl;
-        auto it2 = trie.find(5);
-        ASSERT_NE(it2, trie.end());
+        auto it2 = multiKeyMap.find(5);
+        ASSERT_NE(it2, multiKeyMap.end());
 
         auto&& [it_key1, it_v1] = *it2;
         ASSERT_EQ(it_key1, key1); // Verify that we got the correct key
@@ -204,7 +204,7 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
 
         // It1 should return us 4 values
         ++it2;
-        ASSERT_NE(it2, trie.end());
+        ASSERT_NE(it2, multiKeyMap.end());
 
         auto&& [it_key2, it_v2] = *it2;
         ASSERT_EQ(it_key2, key2); // Verify that we got the correct key
@@ -212,7 +212,7 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
 
         // It1 should return us 4 values
         ++it2;
-        ASSERT_NE(it2, trie.end());
+        ASSERT_NE(it2, multiKeyMap.end());
 
         auto&& [it_key3, it_v3] = *it2;
         ASSERT_EQ(it_key3, key3); // Verify that we got the correct key
@@ -220,7 +220,7 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
 
         // It1 should return us 4 values
         ++it2;
-        ASSERT_NE(it2, trie.end());
+        ASSERT_NE(it2, multiKeyMap.end());
 
         auto&& [it_key4, it_v4] = *it2;
         ASSERT_EQ(it_key4, key4); // Verify that we got the correct key
@@ -229,17 +229,17 @@ TEST(TrieTests, ValidateComplexTriePartialKeyLookup) {
         // Advance the iterator
         ++it2;
         ASSERT_TRUE(it2.isEnd());
-        ASSERT_EQ(it2, trie.end()); // Test that the iterator got advanced and is at the end
+        ASSERT_EQ(it2, multiKeyMap.end()); // Test that the iterator got advanced and is at the end
 
         // Verify that we can still advance and that doing so just spins in-place
         ++it2;
         ASSERT_TRUE(it2.isEnd());
-        ASSERT_EQ(it2, trie.end());
+        ASSERT_EQ(it2, multiKeyMap.end());
     }
 }
 
-TEST(TrieTests, ValidateComplexTrieForEach) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapForEach) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -256,19 +256,19 @@ TEST(TrieTests, ValidateComplexTrieForEach) {
         5
     };
 
-    auto result = trie.insert(keys[0], vals[0]);
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[1], vals[1]);
+    result = multiKeyMap.insert(keys[1], vals[1]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[2], vals[2]);
+    result = multiKeyMap.insert(keys[2], vals[2]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[3], vals[3]);
+    result = multiKeyMap.insert(keys[3], vals[3]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[4], vals[4]);
+    result = multiKeyMap.insert(keys[4], vals[4]);
     ASSERT_EQ(result, 1);
 
     auto count = 0;
-    for(auto it = trie.find(5); it != trie.end(); ++it) {
+    for(auto it = multiKeyMap.find(5); it != multiKeyMap.end(); ++it) {
         auto&& [k,v] = *it;
 
         std::cout << "{" << std::get<0>(k) << ", "
@@ -284,7 +284,7 @@ TEST(TrieTests, ValidateComplexTrieForEach) {
     ////////
     std::cout << "------ FOREACH ------" << std::endl;
     count = 0;
-    for(auto&& [k,v] : trie) {
+    for(auto&& [k,v] : multiKeyMap) {
         std::cout << "{" << std::get<0>(k) << ", "
                          << std::get<1>(k) << ", "
                          << std::get<2>(k) << "} => " << v << std::endl;
@@ -296,8 +296,8 @@ TEST(TrieTests, ValidateComplexTrieForEach) {
     ASSERT_EQ(count, 5);
 }
 
-TEST(TrieTests, ValidateConstness) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+TEST(MultiKeyMapTests, ValidateConstness) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -314,23 +314,23 @@ TEST(TrieTests, ValidateConstness) {
         5
     };
 
-    auto result = trie.insert(keys[0], vals[0]);
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[1], vals[1]);
+    result = multiKeyMap.insert(keys[1], vals[1]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[2], vals[2]);
+    result = multiKeyMap.insert(keys[2], vals[2]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[3], vals[3]);
+    result = multiKeyMap.insert(keys[3], vals[3]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[4], vals[4]);
+    result = multiKeyMap.insert(keys[4], vals[4]);
     ASSERT_EQ(result, 1);
 
-    const auto& const_trie = trie;
+    const auto& const_multiKeyMap = multiKeyMap;
     {
-        auto const_it = const_trie.find(5);
+        auto const_it = const_multiKeyMap.find(5);
 
         auto count = 0;
-        for(; const_it != const_trie.end(); ++const_it) {
+        for(; const_it != const_multiKeyMap.end(); ++const_it) {
             auto&& [k,v] = *const_it;
 
             std::cout << "{" << std::get<0>(k) << ", "
@@ -347,7 +347,7 @@ TEST(TrieTests, ValidateConstness) {
 
         std::cout << "------ FOREACH ------" << std::endl;
         count = 0;
-        for(auto&& [k,v] : trie) {
+        for(auto&& [k,v] : multiKeyMap) {
             std::cout << "{" << std::get<0>(k) << ", "
                              << std::get<1>(k) << ", "
                              << std::get<2>(k) << "} => " << v << std::endl;
@@ -361,8 +361,8 @@ TEST(TrieTests, ValidateConstness) {
     }
 }
 
-TEST(TrieTests, ValidateComplexTrieAt) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapAt) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -379,41 +379,41 @@ TEST(TrieTests, ValidateComplexTrieAt) {
         5
     };
 
-    auto result = trie.insert(keys[0], vals[0]);
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[1], vals[1]);
+    result = multiKeyMap.insert(keys[1], vals[1]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[2], vals[2]);
+    result = multiKeyMap.insert(keys[2], vals[2]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[3], vals[3]);
+    result = multiKeyMap.insert(keys[3], vals[3]);
     ASSERT_EQ(result, 1);
-    result = trie.insert(keys[4], vals[4]);
+    result = multiKeyMap.insert(keys[4], vals[4]);
     ASSERT_EQ(result, 1);
 
-    auto v = trie.at(5, 'c', false);
+    auto v = multiKeyMap.at(5, 'c', false);
     ASSERT_FLOAT_EQ(v, 2);
 
-    v = trie.at(6, 'd', false);
+    v = multiKeyMap.at(6, 'd', false);
     ASSERT_FLOAT_EQ(v, 5);
 
-    EXPECT_THROW(trie.at(7, '\0', false), std::out_of_range);
+    EXPECT_THROW(multiKeyMap.at(7, '\0', false), std::out_of_range);
 
     // Verify const at()
     {
-        const auto& const_trie = trie;
+        const auto& const_multiKeyMap = multiKeyMap;
 
-        v = const_trie.at(5, 'c', false);
+        v = const_multiKeyMap.at(5, 'c', false);
         ASSERT_FLOAT_EQ(v, 2);
 
-        v = const_trie.at(6, 'd', false);
+        v = const_multiKeyMap.at(6, 'd', false);
         ASSERT_FLOAT_EQ(v, 5);
 
-        EXPECT_THROW(const_trie.at(7, '\0', false), std::out_of_range);
+        EXPECT_THROW(const_multiKeyMap.at(7, '\0', false), std::out_of_range);
     }
 }
 
-TEST(TrieTests, ValidateComplexTrieSize) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapSize) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -430,42 +430,42 @@ TEST(TrieTests, ValidateComplexTrieSize) {
         5
     };
 
-    auto size = trie.size();
+    auto size = multiKeyMap.size();
     ASSERT_EQ(size, 0);
 
-    auto result = trie.insert(keys[0], vals[0]);
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
     ASSERT_EQ(result, 1);
 
-    size = trie.size();
+    size = multiKeyMap.size();
     ASSERT_EQ(size, 1);
 
-    result = trie.insert(keys[1], vals[1]);
+    result = multiKeyMap.insert(keys[1], vals[1]);
     ASSERT_EQ(result, 1);
 
-    size = trie.size();
+    size = multiKeyMap.size();
     ASSERT_EQ(size, 2);
 
-    result = trie.insert(keys[2], vals[2]);
+    result = multiKeyMap.insert(keys[2], vals[2]);
     ASSERT_EQ(result, 1);
 
-    size = trie.size();
+    size = multiKeyMap.size();
     ASSERT_EQ(size, 3);
 
-    result = trie.insert(keys[3], vals[3]);
+    result = multiKeyMap.insert(keys[3], vals[3]);
     ASSERT_EQ(result, 1);
 
-    size = trie.size();
+    size = multiKeyMap.size();
     ASSERT_EQ(size, 4);
 
-    result = trie.insert(keys[4], vals[4]);
+    result = multiKeyMap.insert(keys[4], vals[4]);
     ASSERT_EQ(result, 1);
 
-    size = trie.size();
+    size = multiKeyMap.size();
     ASSERT_EQ(size, 5);
 }
 
-TEST(TrieTests, ValidateComplexTrieOperatorBracket) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapOperatorBracket) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -482,23 +482,23 @@ TEST(TrieTests, ValidateComplexTrieOperatorBracket) {
         5
     };
 
-    auto result = trie[keys[0]] = vals[0];
+    auto result = multiKeyMap[keys[0]] = vals[0];
     ASSERT_FLOAT_EQ(result, vals[0]);
-    result = trie[keys[1]] = vals[1];
+    result = multiKeyMap[keys[1]] = vals[1];
     ASSERT_FLOAT_EQ(result, vals[1]);
-    result = trie[keys[2]] = vals[2];
+    result = multiKeyMap[keys[2]] = vals[2];
     ASSERT_FLOAT_EQ(result, vals[2]);
-    result = trie[keys[3]] = vals[3];
+    result = multiKeyMap[keys[3]] = vals[3];
     ASSERT_FLOAT_EQ(result, vals[3]);
-    result = trie[keys[4]] = vals[4];
+    result = multiKeyMap[keys[4]] = vals[4];
     ASSERT_FLOAT_EQ(result, vals[4]);
 
-    auto size = trie.size();
+    auto size = multiKeyMap.size();
     ASSERT_EQ(size, 5);
 
     // Verify that the elements we expect to exist are all there
     auto count = 0;
-    for(auto&& [k,v] : trie) {
+    for(auto&& [k,v] : multiKeyMap) {
         std::cout << "{" << std::get<0>(k) << ", "
                          << std::get<1>(k) << ", "
                          << std::get<2>(k) << "} => " << v << std::endl;
@@ -510,10 +510,10 @@ TEST(TrieTests, ValidateComplexTrieOperatorBracket) {
 
     // Reading only, make sure this doesn't do any insertions and doesn't modify
     //   the value that's already there
-    result = trie[keys[0]];
+    result = multiKeyMap[keys[0]];
     ASSERT_FLOAT_EQ(result, vals[0]);
 
-    size = trie.size();
+    size = multiKeyMap.size();
     ASSERT_EQ(size, 5);
 }
 
