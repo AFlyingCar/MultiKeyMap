@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#define _MKM_DEBUG_OUTPUT std::cerr << "[   MKM   ] "
+
 // TODO: Combine these into a single main Trie.h file
 #include "trie.h"
 #include "Index.h"
@@ -356,6 +358,57 @@ TEST(TrieTests, ValidateConstness) {
         }
         ASSERT_EQ(count, 5);
 
+    }
+}
+
+TEST(TrieTests, ValidateComplexTrieAt) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false)
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto result = trie.insert(keys[0], vals[0]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[1], vals[1]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[2], vals[2]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[3], vals[3]);
+    ASSERT_EQ(result, 1);
+    result = trie.insert(keys[4], vals[4]);
+    ASSERT_EQ(result, 1);
+
+    auto v = trie.at(5, 'c', false);
+    ASSERT_FLOAT_EQ(v, 2);
+
+    v = trie.at(6, 'd', false);
+    ASSERT_FLOAT_EQ(v, 5);
+
+    EXPECT_THROW(trie.at(7, '\0', false), std::out_of_range);
+
+    // Verify const at()
+    {
+        const auto& const_trie = trie;
+
+        v = const_trie.at(5, 'c', false);
+        ASSERT_FLOAT_EQ(v, 2);
+
+        v = const_trie.at(6, 'd', false);
+        ASSERT_FLOAT_EQ(v, 5);
+
+        EXPECT_THROW(const_trie.at(7, '\0', false), std::out_of_range);
     }
 }
 

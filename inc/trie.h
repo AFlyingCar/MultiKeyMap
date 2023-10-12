@@ -12,7 +12,23 @@
 
 # include "Index.h"
 
+# ifndef _MKM_DEBUG_OUTPUT
+#  include <ostream>
+# endif
+
 namespace mkm {
+# ifndef _MKM_DEBUG_OUTPUT
+    namespace detail {
+        class NullBuffer: public std::streambuf {
+            public:
+                int overflow(int c) { return c; }
+        };
+        NullBuffer nul_buffer;
+        std::ostream nul(&nul_buffer);
+    }
+#  define _MKM_DEBUG_OUTPUT ::mkm::detail::nul
+# endif
+
     template<typename V, typename... Keys>
     class MultiKeyMap {
         public:
@@ -134,6 +150,8 @@ namespace mkm {
              *         otherwise.
              */
             bool insert(const key_type& key, const V& value) {
+                _MKM_DEBUG_OUTPUT << "insert" << std::endl;
+
                 NodePtr node = getNodeForPartialKey<Keys...>(key, true);
 
                 // Only insert the value if it does not already exist
@@ -318,6 +336,15 @@ namespace mkm {
                 value_type& operator*() const noexcept {
                     return this->getNodeStack().top()->data.value();
                 }
+
+                /**
+                 * @brief Dereferences iterator and returns value_type
+                 *
+                 * @return The currently looked at key and value.
+                 */
+                value_type* operator->() const noexcept {
+                    return &this->getNodeStack().top()->data.value();
+                }
             };
 
             /**
@@ -331,6 +358,15 @@ namespace mkm {
                  */
                 const value_type& operator*() const noexcept {
                     return this->getNodeStack().top()->data.value();
+                }
+
+                /**
+                 * @brief Dereferences iterator and returns value_type
+                 *
+                 * @return The currently looked at key and value.
+                 */
+                const value_type* operator->() const noexcept {
+                    return &this->getNodeStack().top()->data.value();
                 }
             };
 
@@ -389,7 +425,8 @@ namespace mkm {
              * @return An iterator to all nodes that match the given key
              */
             template<typename... PartialKey>
-            Iterator find(PartialKey&&... key) noexcept {
+            Iterator find(const PartialKey&... key) noexcept {
+                _MKM_DEBUG_OUTPUT << "find()" << std::endl;
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
                 NodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
@@ -410,12 +447,50 @@ namespace mkm {
              * @return An iterator to all nodes that match the given key
              */
             template<typename... PartialKey>
-            ConstIterator find(PartialKey&&... key) const noexcept {
+            ConstIterator find(const PartialKey&... key) const noexcept {
+                _MKM_DEBUG_OUTPUT << "find() const" << std::endl;
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
                 ConstNodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
 
                 return ConstIterator{node};
+            }
+
+            /**
+             * @brief Returns a reference to the value found for the given key.
+             *        If no such element exists, a std::out_of_range exception
+             *        is thrown. 
+             *
+             * @param key The key to search for.
+             *
+             * @return A reference to the value at key
+             */
+            mapped_type& at(const Keys&... key) {
+                _MKM_DEBUG_OUTPUT << "at()" << std::endl;
+                auto it = find(key...);
+                if(it == end()) {
+                    throw std::out_of_range("Requested key not found.");
+                }
+
+                return it->second;
+            }
+
+            /**
+             * @brief Returns a reference to the value found for the given key.
+             *        If no such element exists, a std::out_of_range exception
+             *        is thrown. 
+             *
+             * @param key The key to search for.
+             *
+             * @return A reference to the value at key
+             */
+            const mapped_type& at(const Keys&... key) const {
+                auto it = find(key...);
+                if(it == end()) {
+                    throw std::out_of_range("Requested key not found.");
+                }
+
+                return it->second;
             }
 
             /**
@@ -449,6 +524,7 @@ namespace mkm {
             template<typename... PartialKey>
             ConstNodePtr getNodeForPartialKey(const std::tuple<PartialKey...>& key) const noexcept
             {
+                _MKM_DEBUG_OUTPUT << "getNodeForPartialKey() const" << std::endl;
                 return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{});
             }
 
@@ -467,6 +543,7 @@ namespace mkm {
             ConstNodePtr getNodeForPartialKey(const T& key,
                                               std::index_sequence<Indices...>) const noexcept
             {
+                _MKM_DEBUG_OUTPUT << "getNodeForPartialKey<T, I...>() const" << std::endl;
                 return getNodeForPartialKeyImpl(
                     std::make_tuple(makeWrapper( std::get<Indices>(key) )...));
             }
@@ -482,6 +559,7 @@ namespace mkm {
             template<typename... PartialKey>
             ConstNodePtr getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
             {
+                _MKM_DEBUG_OUTPUT << "getNodeForPartialKeyImpl() const" << std::endl;
                 ConstNodePtr node = root;
 
                 std::apply([&](auto&&... args) {
@@ -502,6 +580,7 @@ namespace mkm {
             template<typename... PartialKey>
             ConstNodePtr getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key) const noexcept
             {
+                _MKM_DEBUG_OUTPUT << "getNodeForPartialKeyImpl(Wrapper...) const" << std::endl;
                 ConstNodePtr node = root;
 
                 // If this is the first time ever trying to get a node, make
@@ -521,16 +600,25 @@ namespace mkm {
                     using ArgType = decltype(key);
                     using RawType = typename std::decay_t<ArgType>::Type;
 
+                    _MKM_DEBUG_OUTPUT << "  key=" << key.value << std::endl;
+
                     // Stop early if node is null
-                    if(node == nullptr) { return false; }
+                    if(node == nullptr) {
+                        _MKM_DEBUG_OUTPUT << "  node is null" << std::endl;
+                        return false;
+                    }
 
                     // Find the correct 'children' for this type
                     // Children are stored in a tuple of hashmap<T, shared_ptr<Node> >
                     const auto& children = getChildrenTypeFromTuple<RawType>(node->children);
 
+                    _MKM_DEBUG_OUTPUT << "  children[" << children.size() << " elements]" << std::endl;
+
                     // If the node for this key value doesn't exist, then set
                     //  'node' to null to denote a lookup failure
                     if(children.count(key.value) == 0) {
+                        _MKM_DEBUG_OUTPUT << "  children does not contain " << key.value << std::endl;
+                        node = nullptr;
                         return false;
                     } else {
                         node = children.at(key.value);
