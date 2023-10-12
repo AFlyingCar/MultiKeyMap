@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 find_package(gtest REQUIRED)
 
 set(TEST_SOURCES
-    TrieTests.cpp
+    MultiKeyMapTests.cpp
 )
 
 add_executable(unit_tests ${TEST_SOURCES})
