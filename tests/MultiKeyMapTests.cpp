@@ -9,22 +9,22 @@
 #include "Index.h"
 
 TEST(MultiKeyMapTests, GetIndexOfTypeTests) {
-    constexpr std::size_t I1 = getIndexOfType<int, int, float, char, int>();
+    constexpr std::size_t I1 = mkm::detail::getIndexOfType<int, int, float, char, int>();
     std::cout << "I1=" << I1 << std::endl;
 
-    constexpr std::size_t I2 = getIndexOfType<float, int, float, char, int>();
+    constexpr std::size_t I2 = mkm::detail::getIndexOfType<float, int, float, char, int>();
     std::cout << "I2=" << I2 << std::endl;
 
-    constexpr std::size_t I3 = getIndexOfType<char, int, float, char, int>();
+    constexpr std::size_t I3 = mkm::detail::getIndexOfType<char, int, float, char, int>();
     std::cout << "I3=" << I3 << std::endl;
 
     // Note: This will not compile. Leaving it in to showcase a failing case
     //   To verify this, uncomment the next 2 lines and try compiling, it should
     //   fail.
-    // constexpr std::size_t I4 = getIndexOfType<std::string, int, float, char, int>();
+    // constexpr std::size_t I4 = detail::getIndexOfType<std::string, int, float, char, int>();
     // std::cout << "I4=" << I4 << std::endl;
 
-    constexpr std::size_t I5 = getIndexOfType<const int, int, float, char, int>();
+    constexpr std::size_t I5 = mkm::detail::getIndexOfType<const int, int, float, char, int>();
     std::cout << "I5=" << I5 << std::endl;
 }
 

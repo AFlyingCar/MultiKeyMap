@@ -127,7 +127,7 @@ namespace mkm {
              */
             template<typename T>
             static Wrapper<T> makeWrapper(const T& t) {
-                return Wrapper<RemoveCVRef_t<T>>{t};
+                return Wrapper<detail::RemoveCVRef_t<T>>{t};
             }
 
         public:
@@ -298,7 +298,8 @@ namespace mkm {
 
                         // Iterate over every possible child in the tuple
                         //   and add its children map to the stack
-                        forEach(node->children, [this](auto& child_map) {
+                        detail::forEach(node->children, [this](auto& child_map)
+                        {
                             for(auto&& [v, child] : child_map) {
                                 // 'v' is stored in the child node, and can be
                                 //   ignored here
@@ -825,7 +826,7 @@ namespace mkm {
             template<typename T, typename... Types>
             NodeChildren<T>& getChildrenTypeFromTuple(std::tuple<Types...>& t) noexcept
             {
-                constexpr std::size_t Index = getIndexOfType<NodeChildren<T>, Types...>();
+                constexpr std::size_t Index = detail::getIndexOfType<NodeChildren<T>, Types...>();
                 return std::get<Index>(t);
             }
 
@@ -842,7 +843,7 @@ namespace mkm {
             template<typename T, typename... Types>
             const NodeChildren<T>& getChildrenTypeFromTuple(const std::tuple<Types...>& t) const noexcept
             {
-                constexpr std::size_t Index = getIndexOfType<NodeChildren<T>, Types...>();
+                constexpr std::size_t Index = detail::getIndexOfType<NodeChildren<T>, Types...>();
                 return std::get<Index>(t);
             }
 
