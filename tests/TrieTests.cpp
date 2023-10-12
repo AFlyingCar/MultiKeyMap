@@ -412,3 +412,108 @@ TEST(TrieTests, ValidateComplexTrieAt) {
     }
 }
 
+TEST(TrieTests, ValidateComplexTrieSize) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false)
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto size = trie.size();
+    ASSERT_EQ(size, 0);
+
+    auto result = trie.insert(keys[0], vals[0]);
+    ASSERT_EQ(result, 1);
+
+    size = trie.size();
+    ASSERT_EQ(size, 1);
+
+    result = trie.insert(keys[1], vals[1]);
+    ASSERT_EQ(result, 1);
+
+    size = trie.size();
+    ASSERT_EQ(size, 2);
+
+    result = trie.insert(keys[2], vals[2]);
+    ASSERT_EQ(result, 1);
+
+    size = trie.size();
+    ASSERT_EQ(size, 3);
+
+    result = trie.insert(keys[3], vals[3]);
+    ASSERT_EQ(result, 1);
+
+    size = trie.size();
+    ASSERT_EQ(size, 4);
+
+    result = trie.insert(keys[4], vals[4]);
+    ASSERT_EQ(result, 1);
+
+    size = trie.size();
+    ASSERT_EQ(size, 5);
+}
+
+TEST(TrieTests, ValidateComplexTrieOperatorBracket) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> trie;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false)
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto result = trie[keys[0]] = vals[0];
+    ASSERT_FLOAT_EQ(result, vals[0]);
+    result = trie[keys[1]] = vals[1];
+    ASSERT_FLOAT_EQ(result, vals[1]);
+    result = trie[keys[2]] = vals[2];
+    ASSERT_FLOAT_EQ(result, vals[2]);
+    result = trie[keys[3]] = vals[3];
+    ASSERT_FLOAT_EQ(result, vals[3]);
+    result = trie[keys[4]] = vals[4];
+    ASSERT_FLOAT_EQ(result, vals[4]);
+
+    auto size = trie.size();
+    ASSERT_EQ(size, 5);
+
+    // Verify that the elements we expect to exist are all there
+    auto count = 0;
+    for(auto&& [k,v] : trie) {
+        std::cout << "{" << std::get<0>(k) << ", "
+                         << std::get<1>(k) << ", "
+                         << std::get<2>(k) << "} => " << v << std::endl;
+
+        ASSERT_EQ(k, keys[count]);
+        ASSERT_FLOAT_EQ(v, vals[count]);
+        ++count;
+    }
+
+    // Reading only, make sure this doesn't do any insertions and doesn't modify
+    //   the value that's already there
+    result = trie[keys[0]];
+    ASSERT_FLOAT_EQ(result, vals[0]);
+
+    size = trie.size();
+    ASSERT_EQ(size, 5);
+}
+

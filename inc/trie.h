@@ -135,7 +135,8 @@ namespace mkm {
              * @brief Constructs a new empty MultiKeyMap
              */
             MultiKeyMap():
-                root(new Node{})
+                root(new Node{}),
+                m_size(0)
             { }
 
             /**
@@ -158,6 +159,7 @@ namespace mkm {
                 //   Return true if we inserted the value, false otherwise
                 if(node->data == std::nullopt) {
                     node->data = { key, value };
+                    ++m_size;
                     return true;
                 } else {
                     return false;
@@ -494,6 +496,63 @@ namespace mkm {
             }
 
             /**
+             * @brief Returns a reference to the value found for a given key.
+             *        If no such element exists, then a new one is inserted.
+             *
+             * @param key The key to search for.
+             *
+             * @return A reference to the value at key.
+             */
+            mapped_type& operator[](const key_type& key) {
+                _MKM_DEBUG_OUTPUT << "operator[]()" << std::endl;
+
+                NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+
+                // Only insert the value if it does not already exist
+                //   Return true if we inserted the value, false otherwise
+                if(node->data == std::nullopt) {
+                    node->data = { key, mapped_type{} };
+                    ++m_size;
+                }
+
+                // By this point we should be guaranteed for node->data to hold
+                //   a value
+                return node->data->second;
+            }
+
+            /**
+             * @brief Returns a reference to the value found for a given key.
+             *        If no such element exists, then a new one is inserted.
+             *
+             * @param key The key to search for.
+             *
+             * @return A reference to the value at key.
+             */
+            mapped_type& operator[](key_type&& key) {
+                _MKM_DEBUG_OUTPUT << "operator[]()" << std::endl;
+
+                NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+
+                // Only insert the value if it does not already exist
+                //   Return true if we inserted the value, false otherwise
+                if(node->data == std::nullopt) {
+                    node->data = { key, mapped_type{} };
+                    ++m_size;
+                }
+
+                return node->data.second;
+            }
+
+            /**
+             * @brief Returns the number of elements in the map.
+             *
+             * @return The number of elements in the map
+             */
+            size_type size() const noexcept {
+                return m_size;
+            }
+
+            /**
              * @brief Erases all values that match the given key.
              *
              * @tparam PartialKey The types used to build the key.
@@ -510,6 +569,9 @@ namespace mkm {
                 ([&] {
                     std::get<Keys>(node->children).clear();
                 }(), ...);
+
+                // TODO: Decrease size and determine how many elements we are
+                //   actually removing
             }
 
         protected:
@@ -787,6 +849,8 @@ namespace mkm {
         private:
             //! The root node
             NodePtr root;
+
+            size_type m_size;
     };
 }
 
