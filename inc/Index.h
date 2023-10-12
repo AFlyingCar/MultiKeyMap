@@ -109,29 +109,6 @@ namespace mkm::detail {
     void forEach(const std::tuple<Args...>& tuple, F&& f) {
         forEach(std::make_index_sequence<sizeof...(Args)>{}, tuple, f);
     }
-
-    ///////
-
-    /**
-     * @brief Helper type for std::tuple_cat
-     *
-     * @tparam Ts The tuple types
-     */
-    template<typename... Ts>
-    using TupleCat_t = decltype(std::tuple_cat(std::declval<Ts>()...));
-
-    /**
-     * @brief Removes all instances of type T from parameter pack Ts
-     * @details https://stackoverflow.com/a/23863962
-     */
-    template<typename T, typename... Ts>
-    using RemoveType = TupleCat_t<
-        typename std::conditional<
-            std::is_same<T, Ts>::value,
-            std::tuple<>,
-            std::tuple<Ts>
-        >::type...
-    >;
 }
 
 #endif
