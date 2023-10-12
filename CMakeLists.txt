@@ -1,21 +1,21 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(GenericTrieCPP)
+project(MultiKeyMap LANGUAGES CXX)
 
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+option(mkm_BuildTests "Build MultiKeyMap tests." ON)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_library(MultiKeyMap INTERFACE)
+add_library(MultiKeyMap::MultiKeyMap ALIAS MultiKeyMap)
 
-set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/third_party
-    ${CMAKE_PREFIX_PATH}
-)
+target_include_directories(MultiKeyMap INTERFACE inc)
+target_compile_features(MultiKeyMap INTERFACE cxx_std_17)
 
-# add_compile_options(-Wall -Werror -Wextra -Wno-sign-compare -Wno-unused-variable -Wno-unused-label -Wno-unused-const-variable -Wno-unused-parameter -Wno-unused-function -Wno-error=deprecated -Wno-error=deprecated-declarations -g)
-# add_executable(unit_tests tests/main.cpp)
+# Unit tests
+if(mkm_BuildTests)
+    set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+        ${CMAKE_PREFIX_PATH}
+    )
 
-# target_include_directories(unit_tests PRIVATE inc)
-
-add_subdirectory(tests)
+    add_subdirectory(tests)
+endif(mkm_BuildTests)
 
