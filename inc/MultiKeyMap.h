@@ -500,10 +500,26 @@ namespace mkm {
                 return Iterator{};
             }
 
-            // TODO: This overload is broken. Compiler gets into an endless loop if forced.
-            //   FIX THIS
+            /**
+             * @brief Finds all values in the map that match the given key.
+             * @details \c key can be only partially provided, so long as they
+             *          are in the same order as <tt>Keys...</tt> and so long as
+             *          no parts of the key are skipped.
+             *
+             * @par If a key is only partially given, then the iterator will
+             *      provide a range of values that match the key more
+             *      specifically and can be iterated for all possible matches.
+             *      See TrieTests::ValidateComplexTriePartialKeyLookup for
+             *      examples.
+             *
+             * @tparam PartialKey The types for key lookup
+             * @param key The key to use for lookup
+             *
+             * @return An iterator to all nodes that match the given key
+             */
             template<typename... PartialKey>
             Iterator find(const std::tuple<PartialKey...>& key) noexcept {
+                _MKM_DEBUG_OUTPUT << "find()" << std::endl;
                 NodePtr node = getNodeForPartialKey(key);
 
                 return Iterator{node};
@@ -554,6 +570,25 @@ namespace mkm {
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
                 ConstNodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+
+                return ConstIterator{node};
+            }
+
+            /**
+             * @brief Finds all values in the map that match the given key.
+             * @details For specific details on how this works, see non-const
+             *          find(PartialKey...).
+             *
+             * @tparam PartialKey The types for key lookup
+             * @param key The key to use for lookup
+             *
+             * @return An iterator to all nodes that match the given key
+             */
+            template<typename... PartialKey>
+            ConstIterator find(const std::tuple<PartialKey...>& key) const noexcept
+            {
+                _MKM_DEBUG_OUTPUT << "find()" << std::endl;
+                NodePtr node = getNodeForPartialKey(key);
 
                 return ConstIterator{node};
             }

@@ -57,7 +57,7 @@ TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapLookup) {
     ASSERT_EQ(result, 1);
 
     // Lookup with variadic version
-    auto it = multiKeyMap.find(5);
+    auto it = multiKeyMap.find(key1);
     ASSERT_NE(it, multiKeyMap.end()); // Test iterator comparison and that we actually found the value
 
     auto&& [it_key1, it_v1] = *it;
@@ -112,7 +112,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInsert) {
     auto result = multiKeyMap.insert({5, 'c', true}, v1);
     ASSERT_EQ(result, 1);
 
-    auto it1 = multiKeyMap.find(5, 'c', true);
+    auto it1 = multiKeyMap.find(key1);
     ASSERT_NE(it1, multiKeyMap.end());
 
     auto&& [it_key1, it_v1] = *it1;
