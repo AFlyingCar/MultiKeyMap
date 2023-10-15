@@ -663,3 +663,96 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapContains) {
     ASSERT_EQ(contains, false);
 }
 
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCopy) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false),
+        std::make_tuple(7, 'z', false) // fake key
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[1], vals[1]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[2], vals[2]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[3], vals[3]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[4], vals[4]);
+    ASSERT_EQ(result, 1);
+
+    // operator=
+    std::cout << "------" << std::endl;
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap2;
+    multiKeyMap2 = multiKeyMap;
+
+    std::cout << "------" << std::endl;
+    for(auto&& [k,v] : multiKeyMap) {
+        ASSERT_TRUE(multiKeyMap2.contains(k));
+        ASSERT_EQ(multiKeyMap2.at(k), v);
+    }
+
+    std::cout << "------" << std::endl;
+    multiKeyMap[keys[2]] = -32;
+    ASSERT_EQ(multiKeyMap.at(keys[2]), -32);
+    ASSERT_NE(multiKeyMap2.at(keys[2]), -32);
+
+    ASSERT_EQ(multiKeyMap.size(), multiKeyMap2.size());
+
+    // copy constructor
+    std::cout << "------" << std::endl;
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap3(multiKeyMap);
+
+    std::cout << "------" << std::endl;
+    for(auto&& [k,v] : multiKeyMap) {
+        ASSERT_TRUE(multiKeyMap3.contains(k));
+        ASSERT_EQ(multiKeyMap3.at(k), v);
+    }
+
+    std::cout << "------" << std::endl;
+    vals[2] = multiKeyMap[keys[2]] = -25;
+    multiKeyMap2[keys[2]] = 17;
+    ASSERT_EQ(multiKeyMap.at(keys[2]), -25);
+    ASSERT_EQ(multiKeyMap2.at(keys[2]), 17);
+    ASSERT_NE(multiKeyMap3.at(keys[2]), -25);
+    ASSERT_NE(multiKeyMap3.at(keys[2]), 17);
+
+    ASSERT_EQ(multiKeyMap.size(), multiKeyMap3.size());
+
+    // move constructor
+    std::cout << "------" << std::endl;
+    auto mkm1_bkup = multiKeyMap; // now that we know copies work, take a backup
+                                  //   for verification
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap4(std::move(multiKeyMap));
+
+    std::cout << "------" << std::endl;
+    for(auto&& [k,v] : mkm1_bkup) {
+        ASSERT_TRUE(multiKeyMap4.contains(k));
+        ASSERT_EQ(multiKeyMap4.at(k), v);
+    }
+
+    // Make sure that old multiKeyMap is empty (size may still exist)
+    ASSERT_EQ(multiKeyMap.begin(), multiKeyMap.end());
+
+    std::cout << "------" << std::endl;
+    multiKeyMap2[keys[2]] = 1024;
+    multiKeyMap3[keys[2]] = -9999999;
+    ASSERT_EQ(multiKeyMap4.at(keys[2]), -25);
+    ASSERT_EQ(multiKeyMap2.at(keys[2]), 1024);
+    ASSERT_EQ(multiKeyMap3.at(keys[2]), -9999999);
+
+    ASSERT_EQ(multiKeyMap.size(), multiKeyMap3.size());
+}
+

@@ -242,6 +242,32 @@ namespace mkm {
                 m_size(0)
             { }
 
+            MultiKeyMap(const MultiKeyMap& rhs):
+                root(new Node{}),
+                m_size(0)
+            {
+                _MKM_DEBUG_OUTPUT << "copy ctor" << std::endl;
+
+                for(auto it = rhs.cbegin(); it != rhs.cend(); ++it) {
+                    insert(it->first, it->second);
+                }
+            }
+
+            MultiKeyMap(MultiKeyMap&& rhs):
+                root(std::move(rhs.root)),
+                m_size(std::move(rhs.m_size))
+            { }
+
+            ~MultiKeyMap() = default;
+
+            MultiKeyMap& operator=(const MultiKeyMap& rhs) {
+                _MKM_DEBUG_OUTPUT << "operator=" << std::endl;
+
+                new(this) MultiKeyMap(rhs);
+
+                return *this;
+            }
+
             /**
              * @brief Inserts a value into the map. Only full keys are allowed.
              *        Will not insert the value if something already exists for
@@ -257,6 +283,7 @@ namespace mkm {
                 _MKM_DEBUG_OUTPUT << "insert" << std::endl;
 
                 NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+                _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
@@ -483,14 +510,14 @@ namespace mkm {
              * @brief Returns a ConstIterator to the beginning of the map.
              */
             ConstIterator begin() const noexcept {
-                return ConstIterator{root};
+                return ConstIterator{std::const_pointer_cast<const Node>(root)};
             }
 
             /**
              * @brief Returns a ConstIterator to the beginning of the map.
              */
             ConstIterator cbegin() const noexcept {
-                return ConstIterator{root};
+                return ConstIterator{std::const_pointer_cast<const Node>(root)};
             }
 
             /**
@@ -542,6 +569,7 @@ namespace mkm {
             Iterator find(const std::tuple<PartialKey...>& key) noexcept {
                 _MKM_DEBUG_OUTPUT << "find()" << std::endl;
                 NodePtr node = getNodeForPartialKey(key);
+                _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 return Iterator{node};
             }
@@ -569,6 +597,7 @@ namespace mkm {
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
                 NodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+                _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 return Iterator{node};
             }
@@ -608,6 +637,7 @@ namespace mkm {
             {
                 _MKM_DEBUG_OUTPUT << "find()" << std::endl;
                 ConstNodePtr node = getNodeForPartialKey(key);
+                _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 return ConstIterator{node};
             }
@@ -666,6 +696,24 @@ namespace mkm {
                 return it->second;
             }
 
+            /**
+             * @brief Returns a reference to the value found for the given key.
+             *        If no such element exists, a std::out_of_range exception
+             *        is thrown. 
+             *
+             * @param key The key to search for.
+             *
+             * @return A reference to the value at key
+             */
+            mapped_type& at(const key_type& key) {
+                _MKM_DEBUG_OUTPUT << "at()" << std::endl;
+                auto it = find(key);
+                if(it == end()) {
+                    throw std::out_of_range("Requested key not found.");
+                }
+
+                return it->second;
+            }
 
             /**
              * @brief Returns a reference to the value found for the given key.
@@ -686,6 +734,24 @@ namespace mkm {
             }
 
             /**
+             * @brief Returns a reference to the value found for the given key.
+             *        If no such element exists, a std::out_of_range exception
+             *        is thrown. 
+             *
+             * @param key The key to search for.
+             *
+             * @return A reference to the value at key
+             */
+            const mapped_type& at(const key_type& key) const {
+                auto it = find(key);
+                if(it == end()) {
+                    throw std::out_of_range("Requested key not found.");
+                }
+
+                return it->second;
+            }
+
+            /**
              * @brief Returns a reference to the value found for a given key.
              *        If no such element exists, then a new one is inserted.
              *
@@ -697,6 +763,7 @@ namespace mkm {
                 _MKM_DEBUG_OUTPUT << "operator[]()" << std::endl;
 
                 NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+                _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
@@ -722,6 +789,7 @@ namespace mkm {
                 _MKM_DEBUG_OUTPUT << "operator[]()" << std::endl;
 
                 NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+                _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 // Only insert the value if it does not already exist
                 //   Return true if we inserted the value, false otherwise
@@ -740,6 +808,13 @@ namespace mkm {
              */
             size_type size() const noexcept {
                 return m_size;
+            }
+
+            /**
+             * @brief Returns true if the number of elements is 0.
+             */
+            bool empty() const noexcept {
+                return m_size == 0;
             }
 
             /**
