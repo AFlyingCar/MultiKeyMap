@@ -306,7 +306,7 @@ namespace mkm {
              * @brief Constructs a new empty MultiKeyMap
              */
             MultiKeyMapImpl():
-                root(new Node{}),
+                m_root(new Node{}),
                 m_size(0)
             { }
 
@@ -321,7 +321,7 @@ namespace mkm {
              */
             template<typename InputIt>
             MultiKeyMapImpl(InputIt first, InputIt last):
-                root(new Node{}),
+                m_root(new Node{}),
                 m_size(0)
             {
                 for(; first != last; ++first) {
@@ -347,7 +347,7 @@ namespace mkm {
              * @param rhs The other MultiKeyMap to copy.
              */
             MultiKeyMapImpl(const MultiKeyMapImpl& rhs):
-                root(new Node{}),
+                m_root(new Node{}),
                 m_size(0)
             {
                 _MKM_DEBUG_OUTPUT << "copy ctor" << std::endl;
@@ -366,7 +366,7 @@ namespace mkm {
              * @param rhs The other MultiKeyMap to move.
              */
             MultiKeyMapImpl(MultiKeyMapImpl&& rhs):
-                root(std::move(rhs.root)),
+                m_root(std::move(rhs.m_root)),
                 m_size(std::move(rhs.m_size))
             { }
 
@@ -638,14 +638,14 @@ namespace mkm {
              * @brief Returns a ConstIterator to the beginning of the map.
              */
             ConstIterator begin() const noexcept {
-                return ConstIterator{std::const_pointer_cast<const Node>(root)};
+                return ConstIterator{std::const_pointer_cast<const Node>(m_root)};
             }
 
             /**
              * @brief Returns a ConstIterator to the beginning of the map.
              */
             ConstIterator cbegin() const noexcept {
-                return ConstIterator{std::const_pointer_cast<const Node>(root)};
+                return ConstIterator{std::const_pointer_cast<const Node>(m_root)};
             }
 
             /**
@@ -666,7 +666,7 @@ namespace mkm {
              * @brief Returns a Iterator to the beginning of the map.
              */
             Iterator begin() noexcept {
-                return Iterator{root};
+                return Iterator{m_root};
             }
 
             /**
@@ -775,7 +775,7 @@ namespace mkm {
              */
             void clear() noexcept {
                 m_size = 0;
-                root.reset(new Node);
+                m_root.reset(new Node);
             }
 
             /**
@@ -1066,7 +1066,7 @@ namespace mkm {
              */
             void swap(MultiKeyMapImpl& rhs) noexcept {
                 std::swap(m_size, rhs.m_size);
-                std::swap(root, rhs.root);
+                std::swap(m_root, rhs.m_root);
             }
 
             /**
@@ -1132,7 +1132,7 @@ namespace mkm {
             ConstNodePtr getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
             {
                 _MKM_DEBUG_OUTPUT << "getNodeForPartialKeyImpl() const" << std::endl;
-                ConstNodePtr node = root;
+                ConstNodePtr node = m_root;
 
                 std::apply([&](auto&&... args) {
                     node = getNodeForPartialKeyImpl<PartialKey...>(args...);
@@ -1153,10 +1153,10 @@ namespace mkm {
             ConstNodePtr getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key) const noexcept
             {
                 _MKM_DEBUG_OUTPUT << "getNodeForPartialKeyImpl(Wrapper...) const" << std::endl;
-                ConstNodePtr node = root;
+                ConstNodePtr node = m_root;
 
                 // If this is the first time ever trying to get a node, make
-                //   sure that we either return early or initialize root
+                //   sure that we either return early or initialize m_root
                 if(node == nullptr) {
                     return nullptr;
                 }
@@ -1252,7 +1252,7 @@ namespace mkm {
             NodePtr getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key,
                                              bool createIfKeyDoesNotExist = false)
             {
-                NodePtr node = root;
+                NodePtr node = m_root;
 
                 std::apply([&](auto&&... args) {
                     node = getNodeForPartialKeyImpl<PartialKey...>(args..., createIfKeyDoesNotExist);
@@ -1273,14 +1273,14 @@ namespace mkm {
             NodePtr getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
                                              bool createIfKeyDoesNotExist = false)
             {
-                NodePtr node = root;
+                NodePtr node = m_root;
                 NodePtr parent = nullptr;
 
                 // If this is the first time ever trying to get a node, make
-                //   sure that we either return early or initialize root
+                //   sure that we either return early or initialize m_root
                 if(node == nullptr) {
                     if(createIfKeyDoesNotExist) {
-                        root = node = std::make_shared<Node>();
+                        m_root = node = std::make_shared<Node>();
                     } else {
                         return nullptr;
                     }
@@ -1362,7 +1362,7 @@ namespace mkm {
 
         private:
             //! The root node
-            NodePtr root;
+            NodePtr m_root;
 
             //! The number of elements in this map
             size_type m_size;
