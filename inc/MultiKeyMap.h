@@ -127,10 +127,62 @@ namespace mkm {
         void forEach(const std::tuple<Args...>& tuple, F&& f) {
             forEach(std::make_index_sequence<sizeof...(Args)>{}, tuple, f);
         }
+
+        /**
+         * @brief The identity transformation for the type T.
+         * @details C++17 version for std::type_identity
+         */
+        template<typename T>
+        struct Identity {
+            using type = T;
+        };
+
+        /**
+         * @brief Extracts the last template type from the parameter pack.
+         *
+         * @tparam Ts The parameter pack
+         */
+        template<typename... Ts>
+        struct Last {
+            //! The last type in Ts...
+            using type = typename decltype((Identity<Ts>{}, ...))::type;
+        };
+
+        template<typename... Ts>
+        using Last_t = typename Last<Ts...>::type;
+
+        /**
+         * @brief Gets all elements in a template parameter pack except for the
+         *        last type.
+         */
+        template<template<typename...> typename C, typename T, typename... Ts>
+        struct AllButLast;
+
+        /**
+         * @brief Gets all elements in a template parameter pack except for the
+         *        last type.
+         *
+         * @tparam C The container type
+         * @tparam I The indices for each type in Ts
+         * @tparam Ts The types.
+         */
+        template<template<typename...> typename C, std::size_t... I, typename... Ts>
+        struct AllButLast<C, std::index_sequence<I...>, Ts...> {
+            using type = C<typename std::tuple_element<I, std::tuple<Ts...>>::type...>;
+        };
+
+        template<template<typename...> typename C, typename... Ts>
+        using AllButLast_t = typename AllButLast<C, std::make_index_sequence<sizeof...(Ts) - 1>, Ts...>::type;
     }
 
+    /**
+     * @brief Defines a map where multiple keys can be mapped to a single value.
+     *
+     * @tparam V The value type
+     * @tparam Keys All key types
+     */
     template<typename V, typename... Keys>
-    class MultiKeyMap {
+    class MultiKeyMapImpl {
         public:
             using key_type = std::tuple<Keys...>;
             using mapped_type = V;
@@ -237,7 +289,7 @@ namespace mkm {
             /**
              * @brief Constructs a new empty MultiKeyMap
              */
-            MultiKeyMap():
+            MultiKeyMapImpl():
                 root(new Node{}),
                 m_size(0)
             { }
@@ -252,7 +304,7 @@ namespace mkm {
              * @param last The end iterator for the range
              */
             template<typename InputIt>
-            MultiKeyMap(InputIt first, InputIt last):
+            MultiKeyMapImpl(InputIt first, InputIt last):
                 root(new Node{}),
                 m_size(0)
             {
@@ -268,8 +320,8 @@ namespace mkm {
              *
              * @param init The initializer list
              */
-            MultiKeyMap(std::initializer_list<value_type> init):
-                MultiKeyMap(init.begin(), init.end())
+            MultiKeyMapImpl(std::initializer_list<value_type> init):
+                MultiKeyMapImpl(init.begin(), init.end())
             { }
 
             /**
@@ -278,7 +330,7 @@ namespace mkm {
              *
              * @param rhs The other MultiKeyMap to copy.
              */
-            MultiKeyMap(const MultiKeyMap& rhs):
+            MultiKeyMapImpl(const MultiKeyMapImpl& rhs):
                 root(new Node{}),
                 m_size(0)
             {
@@ -297,7 +349,7 @@ namespace mkm {
              *
              * @param rhs The other MultiKeyMap to move.
              */
-            MultiKeyMap(MultiKeyMap&& rhs):
+            MultiKeyMapImpl(MultiKeyMapImpl&& rhs):
                 root(std::move(rhs.root)),
                 m_size(std::move(rhs.m_size))
             { }
@@ -307,7 +359,7 @@ namespace mkm {
              *        internally as \c shared_ptr, so no iterators will be
              *        invalidated.
              */
-            ~MultiKeyMap() = default;
+            ~MultiKeyMapImpl() = default;
 
             /**
              * @brief Assignment operator. Replaces the contents of this map
@@ -320,10 +372,10 @@ namespace mkm {
              *
              * @return *this
              */
-            MultiKeyMap& operator=(const MultiKeyMap& rhs) {
+            MultiKeyMapImpl& operator=(const MultiKeyMapImpl& rhs) {
                 _MKM_DEBUG_OUTPUT << "operator=" << std::endl;
 
-                new(this) MultiKeyMap(rhs);
+                new(this) MultiKeyMapImpl(rhs);
 
                 return *this;
             }
@@ -789,7 +841,7 @@ namespace mkm {
              *
              * @return True if they are equivalent, false otherwise.
              */
-            bool operator==(const MultiKeyMap& rhs) const noexcept {
+            bool operator==(const MultiKeyMapImpl& rhs) const noexcept {
                 if(size() != rhs.size()) return false;
 
                 for(auto&& [k,v] : rhs) {
@@ -809,7 +861,7 @@ namespace mkm {
              *
              * @return True if they are not equivalent, false otherwise.
              */
-            bool operator!=(const MultiKeyMap& rhs) const noexcept {
+            bool operator!=(const MultiKeyMapImpl& rhs) const noexcept {
                 return !((*this) == rhs);
             }
 
@@ -996,7 +1048,7 @@ namespace mkm {
              *
              * @param rhs The other map to swap with.
              */
-            void swap(MultiKeyMap& rhs) noexcept {
+            void swap(MultiKeyMapImpl& rhs) noexcept {
                 std::swap(m_size, rhs.m_size);
                 std::swap(root, rhs.root);
             }
@@ -1008,7 +1060,7 @@ namespace mkm {
              *
              * @param source The other map to extract values from.
              */
-            void merge(MultiKeyMap& source) noexcept {
+            void merge(MultiKeyMapImpl& source) noexcept {
                 for(auto&& [k, v] : source) {
                     if(insert(k, v)) {
                         source.erase(k);
@@ -1299,6 +1351,16 @@ namespace mkm {
             //! The number of elements in this map
             size_type m_size;
     };
+
+    /**
+     * @brief Helper type to allow specifying the template arguments in the
+     *        intuitive order of <Keys..., Value>.
+     *
+     * @tparam Args The template arguments for MultiKeyMap. At least 2 must be
+     *              specified, and the last will be the value type.
+     */
+    template<typename... Args>
+    using MultiKeyMap = detail::AllButLast_t<MultiKeyMapImpl, detail::Last_t<Args...>, Args...>;
 }
 
 namespace std {

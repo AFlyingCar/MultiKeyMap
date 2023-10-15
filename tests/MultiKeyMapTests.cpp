@@ -6,6 +6,8 @@
 
 #include "MultiKeyMap.h"
 
+using ComplexMultiKeyMapType = mkm::MultiKeyMap<int, char, bool, float /* V */>;
+
 TEST(MultiKeyMapTests, GetIndexOfTypeTests) {
     constexpr std::size_t I1 = mkm::detail::getIndexOfType<int, int, float, char, int>();
     std::cout << "I1=" << I1 << std::endl;
@@ -28,7 +30,7 @@ TEST(MultiKeyMapTests, GetIndexOfTypeTests) {
 
 TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapInsert) {
     // Validate inserting into a simple multiKeyMap with 1 only key
-    mkm::MultiKeyMap<float /* V */, int> multiKeyMap;
+    mkm::MultiKeyMap<int, float> multiKeyMap;
 
     auto result = multiKeyMap.insert({5}, 3.14159);
     ASSERT_EQ(result, 1);
@@ -42,7 +44,7 @@ TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapInsert) {
 
 TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapLookup) {
     // Validate finding values from a simple multiKeyMap with 1 only key
-    mkm::MultiKeyMap<float /* V */, int> multiKeyMap;
+    mkm::MultiKeyMap<int, float> multiKeyMap;
 
     auto key1 = std::make_tuple(5);
     auto key2 = std::make_tuple(6);
@@ -102,7 +104,7 @@ TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapLookup) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInsert) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     auto key1 = std::make_tuple(5, 'c', true);
 
@@ -132,7 +134,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInsert) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapPartialKeyLookup) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     auto key1 = std::make_tuple(5, 'c', true);
     auto key2 = std::make_tuple(5, 'c', false);
@@ -237,7 +239,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapPartialKeyLookup) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapForEach) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -295,7 +297,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapForEach) {
 }
 
 TEST(MultiKeyMapTests, ValidateConstness) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -360,7 +362,7 @@ TEST(MultiKeyMapTests, ValidateConstness) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapAt) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -411,7 +413,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapAt) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapSize) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -463,7 +465,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapSize) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapOperatorBracket) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -516,7 +518,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapOperatorBracket) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapEraseAndClear) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -566,7 +568,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapEraseAndClear) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCount) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -615,7 +617,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCount) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapContains) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -664,7 +666,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapContains) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCopy) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -694,7 +696,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCopy) {
     ASSERT_EQ(result, 1);
 
     // operator=
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap2;
+    ComplexMultiKeyMapType multiKeyMap2;
     multiKeyMap2 = multiKeyMap;
 
     for(auto&& [k,v] : multiKeyMap) {
@@ -709,7 +711,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCopy) {
     ASSERT_EQ(multiKeyMap.size(), multiKeyMap2.size());
 
     // copy constructor
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap3(multiKeyMap);
+    ComplexMultiKeyMapType multiKeyMap3(multiKeyMap);
 
     for(auto&& [k,v] : multiKeyMap) {
         ASSERT_TRUE(multiKeyMap3.contains(k));
@@ -728,7 +730,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCopy) {
     // move constructor
     auto mkm1_bkup = multiKeyMap; // now that we know copies work, take a backup
                                   //   for verification
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap4(std::move(multiKeyMap));
+    ComplexMultiKeyMapType multiKeyMap4(std::move(multiKeyMap));
 
     for(auto&& [k,v] : mkm1_bkup) {
         ASSERT_TRUE(multiKeyMap4.contains(k));
@@ -748,7 +750,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCopy) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapComparison) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -778,7 +780,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapComparison) {
     ASSERT_EQ(result, 1);
 
     // map 2, make it the same
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap2;
+    ComplexMultiKeyMapType multiKeyMap2;
 
     result = multiKeyMap2.insert(keys[0], vals[0]);
     ASSERT_EQ(result, 1);
@@ -808,7 +810,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapComparison) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapSwap) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -837,7 +839,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapSwap) {
     result = multiKeyMap.insert(keys[4], vals[4]);
     ASSERT_EQ(result, 1);
 
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap2;
+    ComplexMultiKeyMapType multiKeyMap2;
 
     multiKeyMap.swap(multiKeyMap2);
 
@@ -856,7 +858,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapSwap) {
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapMerge) {
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+    ComplexMultiKeyMapType multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
         std::make_tuple(5, 'c', true),
@@ -897,7 +899,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapMerge) {
     result = multiKeyMap.insert(keys[4], vals[4]);
     ASSERT_EQ(result, 1);
 
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap2;
+    ComplexMultiKeyMapType multiKeyMap2;
 
     // Merge full map into empty map, result should be the same as a swap
     multiKeyMap2.merge(multiKeyMap);
@@ -919,7 +921,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapMerge) {
     {
         auto mkm2_bkup = multiKeyMap2;
 
-        mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap3;
+        ComplexMultiKeyMapType multiKeyMap3;
 
         // Only insert some values, so they're not equal
         result = multiKeyMap3.insert(keys[0], vals[0]);
@@ -937,7 +939,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapMerge) {
     }
 
     // Merge map with some overlaps.
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap4;
+    ComplexMultiKeyMapType multiKeyMap4;
 
     // Only insert some values, so they're not equal
     result = multiKeyMap4.insert(keys2[0], vals2[0]);
@@ -1005,7 +1007,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInitializingConstructor) {
         { keys[4], vals[4] }
     };
 
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap {
+    ComplexMultiKeyMapType multiKeyMap {
         { keys[0], vals[0] },
         { keys[1], vals[1] },
         { keys[2], vals[2] },
@@ -1024,7 +1026,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInitializingConstructor) {
         ++count;
     }
 
-    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap2(
+    ComplexMultiKeyMapType multiKeyMap2(
         key_vals.begin(),
         key_vals.end()
     );
