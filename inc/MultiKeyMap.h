@@ -242,6 +242,19 @@ namespace mkm {
                 m_size(0)
             { }
 
+            template<typename InputIt>
+            MultiKeyMap(InputIt first, InputIt last):
+                m_size(0)
+            {
+                for(; first != last; ++first) {
+                    insert(first->first, first->second);
+                }
+            }
+
+            MultiKeyMap(std::initializer_list<value_type> init):
+                MultiKeyMap(init.begin(), init.end())
+            { }
+
             MultiKeyMap(const MultiKeyMap& rhs):
                 root(new Node{}),
                 m_size(0)

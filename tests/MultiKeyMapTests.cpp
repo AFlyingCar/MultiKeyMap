@@ -981,3 +981,63 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapMerge) {
     ASSERT_FLOAT_EQ(multiKeyMap4.at(keys2[1]), vals2[1]);
 }
 
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInitializingConstructor) {
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false)
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    std::vector<std::pair<std::tuple<int, char, bool>, float>> key_vals = {
+        { keys[0], vals[0] },
+        { keys[1], vals[1] },
+        { keys[2], vals[2] },
+        { keys[3], vals[3] },
+        { keys[4], vals[4] }
+    };
+
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap {
+        { keys[0], vals[0] },
+        { keys[1], vals[1] },
+        { keys[2], vals[2] },
+        { keys[3], vals[3] },
+        { keys[4], vals[4] }
+    };
+
+    auto count = 0;
+    for(auto&& [k,v] : multiKeyMap) {
+        std::cout << "{" << std::get<0>(k) << ", "
+                         << std::get<1>(k) << ", "
+                         << std::get<2>(k) << "} => " << v << std::endl;
+
+        ASSERT_EQ(k, keys[count]);
+        ASSERT_FLOAT_EQ(v, vals[count]);
+        ++count;
+    }
+
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap2(
+        key_vals.begin(),
+        key_vals.end()
+    );
+
+    count = 0;
+    for(auto&& [k,v] : multiKeyMap2) {
+        std::cout << "{" << std::get<0>(k) << ", "
+                         << std::get<1>(k) << ", "
+                         << std::get<2>(k) << "} => " << v << std::endl;
+
+        ASSERT_EQ(k, keys[count]);
+        ASSERT_FLOAT_EQ(v, vals[count]);
+        ++count;
+    }
+}
+
