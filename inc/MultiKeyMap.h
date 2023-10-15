@@ -242,8 +242,18 @@ namespace mkm {
                 m_size(0)
             { }
 
+            /**
+             * @brief Constructs a new MultiKeyMap from the contents of the
+             *        range [first, last)
+             *
+             * @tparam InputIt The iterator type
+             *
+             * @param first The start iterator for the range
+             * @param last The end iterator for the range
+             */
             template<typename InputIt>
             MultiKeyMap(InputIt first, InputIt last):
+                root(new Node{}),
                 m_size(0)
             {
                 for(; first != last; ++first) {
@@ -251,10 +261,23 @@ namespace mkm {
                 }
             }
 
+            /**
+             * @brief Constructs a new MultiKeyMap with the contents of the
+             *        initializer list. Equivalent to
+             *        <tt>MultiKeyMap(init.begin(), init.end());</tt>
+             *
+             * @param init The initializer list
+             */
             MultiKeyMap(std::initializer_list<value_type> init):
                 MultiKeyMap(init.begin(), init.end())
             { }
 
+            /**
+             * @brief Copy constructor. Initializes with the contents of rhs.
+             * @details Performs a deep copy of rhs's internal trie
+             *
+             * @param rhs The other MultiKeyMap to copy.
+             */
             MultiKeyMap(const MultiKeyMap& rhs):
                 root(new Node{}),
                 m_size(0)
@@ -266,13 +289,37 @@ namespace mkm {
                 }
             }
 
+            /**
+             * @brief Move constructor. Initializes with the contents of rhs
+             *        using move semantics.
+             * @details rhs will be invalidated after this is run, and will not
+             *          hold any nodes.
+             *
+             * @param rhs The other MultiKeyMap to move.
+             */
             MultiKeyMap(MultiKeyMap&& rhs):
                 root(std::move(rhs.root)),
                 m_size(std::move(rhs.m_size))
             { }
 
+            /**
+             * @brief Destructs the MultiKeyMap. Note that nodes are stored
+             *        internally as \c shared_ptr, so no iterators will be
+             *        invalidated.
+             */
             ~MultiKeyMap() = default;
 
+            /**
+             * @brief Assignment operator. Replaces the contents of this map
+             *        with the contents of rhs. Equivalent to calling the copy
+             *        constructor.
+             * @details Note that nodes are stored internally as \c shared_ptr,
+             *          so no iterators will be invalidated.
+             *
+             * @param rhs The other MultiKeyMap to copy
+             *
+             * @return *this
+             */
             MultiKeyMap& operator=(const MultiKeyMap& rhs) {
                 _MKM_DEBUG_OUTPUT << "operator=" << std::endl;
 
@@ -663,6 +710,16 @@ namespace mkm {
                 root.reset(new Node);
             }
 
+            /**
+             * @brief Returns the number of elements that match with the
+             *        provided key.
+             *
+             * @tparam PartialKey The types for key lookup
+             *
+             * @param key The key to use for lookup
+             *
+             * @return The number of values that match the provided key.
+             */
             template<typename... PartialKey>
             size_type count(const std::tuple<PartialKey...>& key) const noexcept
             {
@@ -673,6 +730,16 @@ namespace mkm {
                 return s;
             }
 
+            /**
+             * @brief Returns the number of elements that match with the
+             *        provided key.
+             *
+             * @tparam PartialKey The types for key lookup
+             *
+             * @param key The key to use for lookup
+             *
+             * @return The number of values that match the provided key.
+             */
             template<typename... PartialKey>
             size_type count(const PartialKey&... key) const noexcept
             {
@@ -680,16 +747,48 @@ namespace mkm {
                 return count<PartialKey...>(tkey);
             }
 
+            /**
+             * @brief Returns if this map contains the requested value.
+             *
+             * @tparam PartialKey The types for key lookup
+             *
+             * @param key The key to use for lookup
+             *
+             * @return True if this map contains the requested key
+             */
             template<typename... PartialKey>
             bool contains(const PartialKey&... key) const noexcept {
                 return find(key...) != end();
             }
 
+            /**
+             * @brief Returns if this map contains the requested value.
+             *
+             * @tparam PartialKey The types for key lookup
+             *
+             * @param key The key to use for lookup
+             *
+             * @return True if this map contains the requested key
+             */
             template<typename... PartialKey>
             bool contains(const std::tuple<PartialKey...>& key) const noexcept {
                 return find(key) != end();
             }
 
+            /**
+             * @brief Compares the contents of this map with the contents of
+             *        rhs for equality.
+             *
+             * @details Will check the following:
+             *   - <tt>size() == rhs.size()</tt>
+             *   - For every key-value pair in \c rhs, if that key exists in
+             *     this map and if the value at that key matches the value in
+             *     rhs.
+             *
+             * @param rhs The other map to compare against.
+             *
+             * @return True if they are equivalent, false otherwise.
+             */
             bool operator==(const MultiKeyMap& rhs) const noexcept {
                 if(size() != rhs.size()) return false;
 
@@ -702,6 +801,14 @@ namespace mkm {
                 return true;
             }
 
+            /**
+             * @brief Compares the contents of this map with the contents of
+             *        rhs for inequality.
+             *
+             * @param rhs The other map to compare against.
+             *
+             * @return True if they are not equivalent, false otherwise.
+             */
             bool operator!=(const MultiKeyMap& rhs) const noexcept {
                 return !((*this) == rhs);
             }
@@ -883,15 +990,28 @@ namespace mkm {
                 }
             }
 
+            /**
+             * @brief Exchanges the contents of this map with the contents of
+             *        rhs. All iterators remain valid.
+             *
+             * @param rhs The other map to swap with.
+             */
             void swap(MultiKeyMap& rhs) noexcept {
                 std::swap(m_size, rhs.m_size);
                 std::swap(root, rhs.root);
             }
 
-            void merge(MultiKeyMap& rhs) noexcept {
-                for(auto&& [k, v] : rhs) {
+            /**
+             * @brief Attempts to splice every element in source into this map
+             *        by inserting it into this map and, if successful, removing
+             *        it from the source.
+             *
+             * @param source The other map to extract values from.
+             */
+            void merge(MultiKeyMap& source) noexcept {
+                for(auto&& [k, v] : source) {
                     if(insert(k, v)) {
-                        rhs.erase(k);
+                        source.erase(k);
                     }
                 }
             }
@@ -1176,11 +1296,21 @@ namespace mkm {
             //! The root node
             NodePtr root;
 
+            //! The number of elements in this map
             size_type m_size;
     };
 }
 
 namespace std {
+    /**
+     * @brief Exchanges the contents of two MultiKeyMaps.
+     *
+     * @tparam V The value type
+     * @tparam Keys The key types.
+     *
+     * @param lhs Left map
+     * @param rhs Right map
+     */
     template<typename V, typename... Keys>
     void swap(mkm::MultiKeyMap<V, Keys...>& lhs,
               mkm::MultiKeyMap<V, Keys...>& rhs) noexcept
