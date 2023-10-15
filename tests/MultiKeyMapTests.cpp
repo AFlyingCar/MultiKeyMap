@@ -28,6 +28,15 @@ TEST(MultiKeyMapTests, GetIndexOfTypeTests) {
     std::cout << "I5=" << I5 << std::endl;
 }
 
+TEST(MultiKeyMapTests, PrintTupleTests) {
+    std::tuple<int, char, std::string> t{
+        5, 'c', "foobar"
+    };
+
+    mkm::detail::printTuple(std::cout, t, std::make_index_sequence<3>());
+    std::cout << std::endl;
+}
+
 TEST(MultiKeyMapTests, ValidateSimpleMultiKeyMapInsert) {
     // Validate inserting into a simple multiKeyMap with 1 only key
     mkm::MultiKeyMap<int, float> multiKeyMap;
@@ -1058,5 +1067,36 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInitializingConstructor) {
         ASSERT_FLOAT_EQ(v, vals[count]);
         ++count;
     }
+}
+
+TEST(MultiKeyMapTests, PrintMapTests) {
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false)
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+    std::vector<std::pair<std::tuple<int, char, bool>, float>> key_vals = {
+        { keys[0], vals[0] },
+        { keys[1], vals[1] },
+        { keys[2], vals[2] },
+        { keys[3], vals[3] },
+        { keys[4], vals[4] }
+    };
+
+    ComplexMultiKeyMapType multiKeyMap(
+        key_vals.begin(),
+        key_vals.end()
+    );
+
+    std::cout << multiKeyMap << std::endl;
 }
 

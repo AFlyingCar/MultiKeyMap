@@ -11,9 +11,7 @@
 # include <type_traits>
 # include <tuple>
 
-# ifndef _MKM_DEBUG_OUTPUT
-#  include <ostream>
-# endif
+# include <ostream>
 
 namespace mkm {
     namespace detail {
@@ -173,6 +171,24 @@ namespace mkm {
 
         template<template<typename...> typename C, typename... Ts>
         using AllButLast_t = typename AllButLast<C, std::make_index_sequence<sizeof...(Ts) - 1>, Ts...>::type;
+
+        /**
+         * @brief Prints a tuple into a stream
+         *
+         * @tparam T The tuple type
+         * @tparam Is The tuple indices
+         *
+         * @param stream The stream to output into
+         * @param tuple The tuple
+         * @param std::index_sequence
+         */
+        template<typename T, std::size_t... Is>
+        void printTuple(std::ostream& stream, const T& tuple, std::index_sequence<Is...>) noexcept
+        {
+            stream << '{';
+            int unused[]{0, (void(stream << (Is == 0 ? "" : ", ") << std::get<Is>(tuple)), 0)...};
+            stream << '}';
+        }
     }
 
     /**
@@ -1361,6 +1377,34 @@ namespace mkm {
      */
     template<typename... Args>
     using MultiKeyMap = detail::AllButLast_t<MultiKeyMapImpl, detail::Last_t<Args...>, Args...>;
+
+    /**
+     * @brief Outputs the given MultiKeyMap to a stream.
+     *
+     * @tparam V The value type
+     * @tparam Keys The key types.
+     *
+     * @param stream The stream to output into
+     * @param map The map to output
+     *
+     * @return stream
+     */
+    template<typename V, typename... Keys>
+    std::ostream& operator<<(std::ostream& stream,
+                             const MultiKeyMapImpl<V, Keys...>& map) noexcept
+    {
+        constexpr std::size_t KeySize = sizeof...(Keys);
+
+        auto i = map.size();
+        stream << '[' << KeySize << " keys, " << i << " elements]{";
+        for(auto&& [k, v] : map) {
+            --i;
+            detail::printTuple(stream, k, std::make_index_sequence<KeySize>());
+            stream << ':' << v << (i==0 ? "" : ", ");
+        }
+
+        return stream << '}';
+    }
 }
 
 namespace std {
@@ -1374,8 +1418,8 @@ namespace std {
      * @param rhs Right map
      */
     template<typename V, typename... Keys>
-    void swap(mkm::MultiKeyMap<V, Keys...>& lhs,
-              mkm::MultiKeyMap<V, Keys...>& rhs) noexcept
+    void swap(mkm::MultiKeyMapImpl<V, Keys...>& lhs,
+              mkm::MultiKeyMapImpl<V, Keys...>& rhs) noexcept
     {
         lhs.swap(rhs);
     }
