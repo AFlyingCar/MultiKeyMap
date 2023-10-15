@@ -677,6 +677,22 @@ namespace mkm {
                 return find(key) != end();
             }
 
+            bool operator==(const MultiKeyMap& rhs) const noexcept {
+                if(size() != rhs.size()) return false;
+
+                for(auto&& [k,v] : rhs) {
+                    auto it = find(k);
+                    if(it == end()) return false;
+                    if(it->second != v) return false;
+                }
+
+                return true;
+            }
+
+            bool operator!=(const MultiKeyMap& rhs) const noexcept {
+                return !((*this) == rhs);
+            }
+
             /**
              * @brief Returns a reference to the value found for the given key.
              *        If no such element exists, a std::out_of_range exception
@@ -817,6 +833,7 @@ namespace mkm {
                 return m_size == 0;
             }
 
+
             /**
              * @brief Erases all values that match the given key.
              *
@@ -850,6 +867,19 @@ namespace mkm {
                 if(node->parent != nullptr) {
                     constexpr std::size_t last_idx = sizeof...(PartialKey) - 1;
                     std::get<last_idx>(node->parent->children).erase(std::get<last_idx>(key));
+                }
+            }
+
+            void swap(MultiKeyMap& rhs) noexcept {
+                std::swap(m_size, rhs.m_size);
+                std::swap(root, rhs.root);
+            }
+
+            void merge(MultiKeyMap& rhs) noexcept {
+                for(auto&& [k, v] : rhs) {
+                    if(insert(k, v)) {
+                        rhs.erase(k);
+                    }
                 }
             }
 
@@ -1135,6 +1165,15 @@ namespace mkm {
 
             size_type m_size;
     };
+}
+
+namespace std {
+    template<typename V, typename... Keys>
+    void swap(mkm::MultiKeyMap<V, Keys...>& lhs,
+              mkm::MultiKeyMap<V, Keys...>& rhs) noexcept
+    {
+        lhs.swap(rhs);
+    }
 }
 
 #endif
