@@ -515,3 +515,47 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapOperatorBracket) {
     ASSERT_EQ(size, 5);
 }
 
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapErase) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false)
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[1], vals[1]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[2], vals[2]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[3], vals[3]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[4], vals[4]);
+    ASSERT_EQ(result, 1);
+
+    auto size = multiKeyMap.size();
+    ASSERT_EQ(size, 5);
+
+    multiKeyMap.erase(keys[1]);
+
+    // Verify that the size has decreased
+    size = multiKeyMap.size();
+    ASSERT_EQ(size, 4);
+
+    // Verify that the element cannot be found
+    auto it = multiKeyMap.find(keys[1]);
+    ASSERT_TRUE(it.isEnd());
+    ASSERT_EQ(it, multiKeyMap.end());
+}
+

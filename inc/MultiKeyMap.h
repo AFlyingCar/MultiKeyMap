@@ -24,6 +24,7 @@ namespace mkm {
         };
         NullBuffer nul_buffer;
         std::ostream nul(&nul_buffer);
+#  define _MKM_DEFAULT_DEBUG
 #  define _MKM_DEBUG_OUTPUT ::mkm::detail::nul
 # endif
 
@@ -196,6 +197,9 @@ namespace mkm {
 
                 // Value is optional as one is only held if this is a leaf
                 std::optional<Value> data;
+
+                //! Parent node. Will be null for the root
+                NodePtr parent;
             };
 
             //! Helper type alias for access a Node's children type
@@ -392,6 +396,7 @@ namespace mkm {
                      *          m_nodes is not empty.
                      */
                     void advance() noexcept {
+                        _MKM_DEBUG_OUTPUT << "advance()" << std::endl;
                         auto node = m_nodes.top();
                         m_nodes.pop();
 
@@ -399,7 +404,9 @@ namespace mkm {
                         //   and add its children map to the stack
                         detail::forEach(node->children, [this](auto& child_map)
                         {
+                            _MKM_DEBUG_OUTPUT << "  " << child_map.size() << " children" << std::endl;
                             for(auto&& [v, child] : child_map) {
+                                _MKM_DEBUG_OUTPUT << "    " << v << std::endl;
                                 // 'v' is stored in the child node, and can be
                                 //   ignored here
                                 m_nodes.push(child);
@@ -695,18 +702,32 @@ namespace mkm {
              */
             template<typename... PartialKey>
             void erase(std::tuple<PartialKey...> key) {
+                _MKM_DEBUG_OUTPUT << "erase()" << std::endl;
                 NodePtr node = getNodeForPartialKey(key);
+                _MKM_DEBUG_OUTPUT << "  node=" << node.get() << std::endl;
 
-                // TODO: We should probably actually return the erased values as
-                //   well
+                auto c = 0;
+                // Decrease the size of this element by the number of values
+                //   that are getting removed
+                for(auto it = Iterator{node}; it != end(); ++it)
+                {
+# ifndef _MKM_DEFAULT_DEBUG
+                    ++c;
+# endif
+                    --m_size;
+                }
+                _MKM_DEBUG_OUTPUT << "  Dec size by " << c << std::endl;
 
                 // For each part of the key, erase all children
                 ([&] {
-                    std::get<Keys>(node->children).clear();
+                    _MKM_DEBUG_OUTPUT << "  Clear node child type " << typeid(Keys).name() << std::endl;
+                    getChildrenTypeFromTuple<Keys>(node->children).clear();
                 }(), ...);
 
-                // TODO: Decrease size and determine how many elements we are
-                //   actually removing
+                if(node->parent != nullptr) {
+                    constexpr std::size_t last_idx = sizeof...(PartialKey) - 1;
+                    std::get<last_idx>(node->parent->children).erase(std::get<last_idx>(key));
+                }
             }
 
         protected:
@@ -899,6 +920,7 @@ namespace mkm {
                                              bool createIfKeyDoesNotExist = false)
             {
                 NodePtr node = root;
+                NodePtr parent = nullptr;
 
                 // If this is the first time ever trying to get a node, make
                 //   sure that we either return early or initialize root
@@ -934,11 +956,14 @@ namespace mkm {
                     if(children.count(key.value) == 0) {
                         if(createIfKeyDoesNotExist) {
                             node = children[key.value] = std::make_shared<Node>();
+                            node->parent = parent;
+                            parent = node;
                         } else {
                             node = nullptr;
                         }
                     } else {
                         node = children[key.value];
+                        parent = node;
                     }
 
                     return true;
