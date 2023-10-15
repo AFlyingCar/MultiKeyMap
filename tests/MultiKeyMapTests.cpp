@@ -855,6 +855,23 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapSwap) {
     }
 
     ASSERT_TRUE(multiKeyMap.empty());
+
+    // Test std::swap
+
+    std::swap(multiKeyMap, multiKeyMap2);
+
+    count = 0;
+    for(auto&& [k,v] : multiKeyMap) {
+        std::cout << "{" << std::get<0>(k) << ", "
+                         << std::get<1>(k) << ", "
+                         << std::get<2>(k) << "} => " << v << std::endl;
+
+        ASSERT_EQ(k, keys[count]);
+        ASSERT_FLOAT_EQ(v, vals[count]);
+        ++count;
+    }
+
+    ASSERT_TRUE(multiKeyMap2.empty());
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapMerge) {
