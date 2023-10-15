@@ -515,7 +515,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapOperatorBracket) {
     ASSERT_EQ(size, 5);
 }
 
-TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapErase) {
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapEraseAndClear) {
     mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
 
     std::vector<std::tuple<int, char, bool>> keys = {
@@ -557,6 +557,12 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapErase) {
     auto it = multiKeyMap.find(keys[1]);
     ASSERT_TRUE(it.isEnd());
     ASSERT_EQ(it, multiKeyMap.end());
+
+    // Verify clear works
+    multiKeyMap.clear();
+    size = multiKeyMap.size();
+    ASSERT_EQ(size, 0);
+    ASSERT_EQ(multiKeyMap.begin(), multiKeyMap.end());
 }
 
 TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCount) {

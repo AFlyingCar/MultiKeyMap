@@ -612,6 +612,14 @@ namespace mkm {
                 return ConstIterator{node};
             }
 
+            /**
+             * @brief Erases all elements.
+             */
+            void clear() noexcept {
+                m_size = 0;
+                root.reset(new Node);
+            }
+
             template<typename... PartialKey>
             size_type count(const std::tuple<PartialKey...>& key) const noexcept
             {
