@@ -559,3 +559,101 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapErase) {
     ASSERT_EQ(it, multiKeyMap.end());
 }
 
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapCount) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false),
+        std::make_tuple(7, 'z', false) // fake key
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[1], vals[1]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[2], vals[2]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[3], vals[3]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[4], vals[4]);
+    ASSERT_EQ(result, 1);
+
+    // Full key
+    auto count = multiKeyMap.count(keys[1]);
+    ASSERT_EQ(count, 1);
+
+    // Partial key
+    count = multiKeyMap.count(5, 'c');
+    ASSERT_EQ(count, 2);
+    count = multiKeyMap.count(5);
+    ASSERT_EQ(count, 4);
+    count = multiKeyMap.count(6);
+    ASSERT_EQ(count, 1);
+
+    // Non-existant key
+    count = multiKeyMap.count(7);
+    ASSERT_EQ(count, 0);
+    count = multiKeyMap.count(keys[5]);
+    ASSERT_EQ(count, 0);
+}
+
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapContains) {
+    mkm::MultiKeyMap<float /* V */, int, char, bool> multiKeyMap;
+
+    std::vector<std::tuple<int, char, bool>> keys = {
+        std::make_tuple(5, 'c', true),
+        std::make_tuple(5, 'c', false),
+        std::make_tuple(5, 'b', true),
+        std::make_tuple(5, 'd', false),
+        std::make_tuple(6, 'd', false),
+        std::make_tuple(7, 'z', false) // fake key
+    };
+    std::vector<float> vals = {
+        1,
+        2,
+        3,
+        4,
+        5
+    };
+
+    auto result = multiKeyMap.insert(keys[0], vals[0]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[1], vals[1]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[2], vals[2]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[3], vals[3]);
+    ASSERT_EQ(result, 1);
+    result = multiKeyMap.insert(keys[4], vals[4]);
+    ASSERT_EQ(result, 1);
+
+    // Full key
+    auto contains = multiKeyMap.contains(keys[1]);
+    ASSERT_EQ(contains, true);
+
+    // Partial key
+    contains = multiKeyMap.contains(5, 'c');
+    ASSERT_EQ(contains, true);
+    contains = multiKeyMap.contains(5);
+    ASSERT_EQ(contains, true);
+    contains = multiKeyMap.contains(6);
+    ASSERT_EQ(contains, true);
+
+    // Non-existant key
+    contains = multiKeyMap.contains(7);
+    ASSERT_EQ(contains, false);
+    contains = multiKeyMap.contains(keys[5]);
+    ASSERT_EQ(contains, false);
+}
+

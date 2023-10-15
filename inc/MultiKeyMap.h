@@ -487,9 +487,23 @@ namespace mkm {
             }
 
             /**
+             * @brief Returns a ConstIterator to the beginning of the map.
+             */
+            ConstIterator cbegin() const noexcept {
+                return ConstIterator{root};
+            }
+
+            /**
              * @brief Returns a ConstIterator to the end of the map.
              */
             ConstIterator end() const noexcept {
+                return ConstIterator{};
+            }
+
+            /**
+             * @brief Returns a ConstIterator to the end of the map.
+             */
+            ConstIterator cend() const noexcept {
                 return ConstIterator{};
             }
 
@@ -576,9 +590,7 @@ namespace mkm {
                 _MKM_DEBUG_OUTPUT << "find() const" << std::endl;
                 std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
 
-                ConstNodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
-
-                return ConstIterator{node};
+                return find(tkey);
             }
 
             /**
@@ -595,9 +607,36 @@ namespace mkm {
             ConstIterator find(const std::tuple<PartialKey...>& key) const noexcept
             {
                 _MKM_DEBUG_OUTPUT << "find()" << std::endl;
-                NodePtr node = getNodeForPartialKey(key);
+                ConstNodePtr node = getNodeForPartialKey(key);
 
                 return ConstIterator{node};
+            }
+
+            template<typename... PartialKey>
+            size_type count(const std::tuple<PartialKey...>& key) const noexcept
+            {
+                _MKM_DEBUG_OUTPUT << "count()" << std::endl;
+                size_type s = 0;
+                for(auto it = find(key); it != end(); ++it, ++s)
+                    _MKM_DEBUG_OUTPUT << "  ++" << std::endl;
+                return s;
+            }
+
+            template<typename... PartialKey>
+            size_type count(const PartialKey&... key) const noexcept
+            {
+                std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
+                return count<PartialKey...>(tkey);
+            }
+
+            template<typename... PartialKey>
+            bool contains(const PartialKey&... key) const noexcept {
+                return find(key...) != end();
+            }
+
+            template<typename... PartialKey>
+            bool contains(const std::tuple<PartialKey...>& key) const noexcept {
+                return find(key) != end();
             }
 
             /**
@@ -618,6 +657,7 @@ namespace mkm {
 
                 return it->second;
             }
+
 
             /**
              * @brief Returns a reference to the value found for the given key.
