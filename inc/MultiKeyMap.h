@@ -1002,7 +1002,9 @@ namespace mkm {
                     ++m_size;
                 }
 
-                return node->data.second;
+                // By this point we should be guaranteed for node->data to hold
+                //   a value
+                return node->data->second;
             }
 
             /**
