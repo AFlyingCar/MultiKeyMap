@@ -499,7 +499,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapOperatorBracket) {
     ASSERT_FLOAT_EQ(result, vals[2]);
     result = multiKeyMap[keys[3]] = vals[3];
     ASSERT_FLOAT_EQ(result, vals[3]);
-    result = multiKeyMap[keys[4]] = vals[4];
+    result = multiKeyMap[{6, 'd', false}] = vals[4];
     ASSERT_FLOAT_EQ(result, vals[4]);
 
     auto size = multiKeyMap.size();
