@@ -218,7 +218,7 @@ namespace mkm {
              * @details Each node will hold remaining parts of a key as children
              *          as well as an optional value (which should only be
              *          defined for leaf nodes, as values can only be inserted
-             *          for full keys, not partial keys).
+             *          for full keys, not key prefixes).
              *
              * @par Example structure for a trie with a key of
              *      <tt> {int, string, FILE, float} </tt> (let the stored value just be 'V'):
@@ -410,7 +410,7 @@ namespace mkm {
             bool insert(const key_type& key, const V& value) {
                 _MKM_DEBUG_OUTPUT << "insert" << std::endl;
 
-                NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+                NodePtr node = getNodeForKeyPrefix<Keys...>(key, true);
                 _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 // Only insert the value if it does not already exist
@@ -453,10 +453,10 @@ namespace mkm {
                             m_nodes.push(node);
 
                             // If the top node does not have a value, advance
-                            //   until one is found (For the case of partial
-                            //   keys, where a node is returned that does not
-                            //   hold a value because we are given one that is
-                            //   part of the way through a key)
+                            //   until one is found (For the case of key
+                            //   prefixes, where a node is returned that does
+                            //   not hold a value because we are given one that
+                            //   is part of the way through a key)
                             while(!m_nodes.empty() &&
                                   !m_nodes.top()->data.has_value())
                             {
@@ -685,18 +685,18 @@ namespace mkm {
              * @par If a key is only partially given, then the iterator will
              *      provide a range of values that match the key more
              *      specifically and can be iterated for all possible matches.
-             *      See TrieTests::ValidateComplexTriePartialKeyLookup for
+             *      See TrieTests::ValidateComplexTrieKeyPrefixLookup for
              *      examples.
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              * @param key The key to use for lookup
              *
              * @return An iterator to all nodes that match the given key
              */
-            template<typename... PartialKey>
-            Iterator find(const std::tuple<PartialKey...>& key) noexcept {
+            template<typename... KeyPrefix>
+            Iterator find(const std::tuple<KeyPrefix...>& key) noexcept {
                 _MKM_DEBUG_OUTPUT << "find()" << std::endl;
-                NodePtr node = getNodeForPartialKey(key);
+                NodePtr node = getNodeForKeyPrefix(key);
                 _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 return Iterator{node};
@@ -711,20 +711,20 @@ namespace mkm {
              * @par If a key is only partially given, then the iterator will
              *      provide a range of values that match the key more
              *      specifically and can be iterated for all possible matches.
-             *      See TrieTests::ValidateComplexTriePartialKeyLookup for
+             *      See TrieTests::ValidateComplexTrieKeyPrefixLookup for
              *      examples.
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              * @param key The key to use for lookup
              *
              * @return An iterator to all nodes that match the given key
              */
-            template<typename... PartialKey>
-            Iterator find(const PartialKey&... key) noexcept {
+            template<typename... KeyPrefix>
+            Iterator find(const KeyPrefix&... key) noexcept {
                 _MKM_DEBUG_OUTPUT << "find()" << std::endl;
-                std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
+                std::tuple<std::decay_t<KeyPrefix>...> tkey = std::make_tuple(key...);
 
-                NodePtr node = getNodeForPartialKey<std::decay_t<PartialKey>...>(tkey);
+                NodePtr node = getNodeForKeyPrefix<std::decay_t<KeyPrefix>...>(tkey);
                 _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 return Iterator{node};
@@ -735,17 +735,17 @@ namespace mkm {
             /**
              * @brief Finds all values in the map that match the given key.
              * @details For specific details on how this works, see non-const
-             *          find(PartialKey...).
+             *          find(KeyPrefix...).
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              * @param key The key to use for lookup
              *
              * @return An iterator to all nodes that match the given key
              */
-            template<typename... PartialKey>
-            ConstIterator find(const PartialKey&... key) const noexcept {
+            template<typename... KeyPrefix>
+            ConstIterator find(const KeyPrefix&... key) const noexcept {
                 _MKM_DEBUG_OUTPUT << "find() const" << std::endl;
-                std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
+                std::tuple<std::decay_t<KeyPrefix>...> tkey = std::make_tuple(key...);
 
                 return find(tkey);
             }
@@ -753,18 +753,18 @@ namespace mkm {
             /**
              * @brief Finds all values in the map that match the given key.
              * @details For specific details on how this works, see non-const
-             *          find(PartialKey...).
+             *          find(KeyPrefix...).
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              * @param key The key to use for lookup
              *
              * @return An iterator to all nodes that match the given key
              */
-            template<typename... PartialKey>
-            ConstIterator find(const std::tuple<PartialKey...>& key) const noexcept
+            template<typename... KeyPrefix>
+            ConstIterator find(const std::tuple<KeyPrefix...>& key) const noexcept
             {
                 _MKM_DEBUG_OUTPUT << "find()" << std::endl;
-                ConstNodePtr node = getNodeForPartialKey(key);
+                ConstNodePtr node = getNodeForKeyPrefix(key);
                 _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 return ConstIterator{node};
@@ -782,14 +782,14 @@ namespace mkm {
              * @brief Returns the number of elements that match with the
              *        provided key.
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              *
              * @param key The key to use for lookup
              *
              * @return The number of values that match the provided key.
              */
-            template<typename... PartialKey>
-            size_type count(const std::tuple<PartialKey...>& key) const noexcept
+            template<typename... KeyPrefix>
+            size_type count(const std::tuple<KeyPrefix...>& key) const noexcept
             {
                 _MKM_DEBUG_OUTPUT << "count()" << std::endl;
                 size_type s = 0;
@@ -802,44 +802,44 @@ namespace mkm {
              * @brief Returns the number of elements that match with the
              *        provided key.
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              *
              * @param key The key to use for lookup
              *
              * @return The number of values that match the provided key.
              */
-            template<typename... PartialKey>
-            size_type count(const PartialKey&... key) const noexcept
+            template<typename... KeyPrefix>
+            size_type count(const KeyPrefix&... key) const noexcept
             {
-                std::tuple<std::decay_t<PartialKey>...> tkey = std::make_tuple(key...);
-                return count<PartialKey...>(tkey);
+                std::tuple<std::decay_t<KeyPrefix>...> tkey = std::make_tuple(key...);
+                return count<KeyPrefix...>(tkey);
             }
 
             /**
              * @brief Returns if this map contains the requested value.
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              *
              * @param key The key to use for lookup
              *
              * @return True if this map contains the requested key
              */
-            template<typename... PartialKey>
-            bool contains(const PartialKey&... key) const noexcept {
+            template<typename... KeyPrefix>
+            bool contains(const KeyPrefix&... key) const noexcept {
                 return find(key...) != end();
             }
 
             /**
              * @brief Returns if this map contains the requested value.
              *
-             * @tparam PartialKey The types for key lookup
+             * @tparam KeyPrefix The types for key lookup
              *
              * @param key The key to use for lookup
              *
              * @return True if this map contains the requested key
              */
-            template<typename... PartialKey>
-            bool contains(const std::tuple<PartialKey...>& key) const noexcept {
+            template<typename... KeyPrefix>
+            bool contains(const std::tuple<KeyPrefix...>& key) const noexcept {
                 return find(key) != end();
             }
 
@@ -966,7 +966,7 @@ namespace mkm {
             mapped_type& operator[](const key_type& key) {
                 _MKM_DEBUG_OUTPUT << "operator[]()" << std::endl;
 
-                NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+                NodePtr node = getNodeForKeyPrefix<Keys...>(key, true);
                 _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 // Only insert the value if it does not already exist
@@ -992,7 +992,7 @@ namespace mkm {
             mapped_type& operator[](key_type&& key) {
                 _MKM_DEBUG_OUTPUT << "operator[]()" << std::endl;
 
-                NodePtr node = getNodeForPartialKey<Keys...>(key, true);
+                NodePtr node = getNodeForKeyPrefix<Keys...>(key, true);
                 _MKM_DEBUG_OUTPUT << "  " << node.get() << std::endl;
 
                 // Only insert the value if it does not already exist
@@ -1027,13 +1027,13 @@ namespace mkm {
             /**
              * @brief Erases all values that match the given key.
              *
-             * @tparam PartialKey The types used to build the key.
+             * @tparam KeyPrefix The types used to build the key.
              * @param key The key used to lookup the value to erase
              */
-            template<typename... PartialKey>
-            void erase(std::tuple<PartialKey...> key) {
+            template<typename... KeyPrefix>
+            void erase(std::tuple<KeyPrefix...> key) {
                 _MKM_DEBUG_OUTPUT << "erase()" << std::endl;
-                NodePtr node = getNodeForPartialKey(key);
+                NodePtr node = getNodeForKeyPrefix(key);
                 _MKM_DEBUG_OUTPUT << "  node=" << node.get() << std::endl;
 
                 auto c = 0;
@@ -1055,7 +1055,7 @@ namespace mkm {
                 }(), ...);
 
                 if(node->parent != nullptr) {
-                    constexpr std::size_t last_idx = sizeof...(PartialKey) - 1;
+                    constexpr std::size_t last_idx = sizeof...(KeyPrefix) - 1;
                     std::get<last_idx>(node->parent->children).erase(std::get<last_idx>(key));
                 }
             }
@@ -1088,22 +1088,22 @@ namespace mkm {
 
         protected:
             /**
-             * @brief Gets the node for the given partial key.
+             * @brief Gets the node for the given prefix key.
              *
-             * @tparam PartialKey The types for the partial key
+             * @tparam KeyPrefix The types for the prefix key
              * @param key The key to search for
              *
              * @return A shared_ptr to the node for the given key.
              */
-            template<typename... PartialKey>
-            ConstNodePtr getNodeForPartialKey(const std::tuple<PartialKey...>& key) const noexcept
+            template<typename... KeyPrefix>
+            ConstNodePtr getNodeForKeyPrefix(const std::tuple<KeyPrefix...>& key) const noexcept
             {
-                _MKM_DEBUG_OUTPUT << "getNodeForPartialKey() const" << std::endl;
-                return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{});
+                _MKM_DEBUG_OUTPUT << "getNodeForKeyPrefix() const" << std::endl;
+                return getNodeForKeyPrefix(key, std::make_index_sequence<sizeof...(KeyPrefix)>{});
             }
 
             /**
-             * @brief Gets the node for the given partial key. Wraps each key
+             * @brief Gets the node for the given prefix key. Wraps each key
              *        part in Wrapper.
              *
              * @tparam T The tuple type for key
@@ -1114,47 +1114,47 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename T, std::size_t... Indices>
-            ConstNodePtr getNodeForPartialKey(const T& key,
+            ConstNodePtr getNodeForKeyPrefix(const T& key,
                                               std::index_sequence<Indices...>) const noexcept
             {
-                _MKM_DEBUG_OUTPUT << "getNodeForPartialKey<T, I...>() const" << std::endl;
-                return getNodeForPartialKeyImpl(
+                _MKM_DEBUG_OUTPUT << "getNodeForKeyPrefix<T, I...>() const" << std::endl;
+                return getNodeForKeyPrefixImpl(
                     std::make_tuple(makeWrapper( std::get<Indices>(key) )...));
             }
 
             /**
-             * @brief Implementation detail for getNodeForPartialKey
+             * @brief Implementation detail for getNodeForKeyPrefix
              *
-             * @tparam PartialKey The types for the partial key
-             * @param key A partial key.
+             * @tparam KeyPrefix The types for the prefix key
+             * @param key A prefix key.
              *
              * @return  A shared_ptr to the node for the given key.
              */
-            template<typename... PartialKey>
-            ConstNodePtr getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key) const noexcept
+            template<typename... KeyPrefix>
+            ConstNodePtr getNodeForKeyPrefixImpl(const std::tuple<Wrapper<KeyPrefix>...>& key) const noexcept
             {
-                _MKM_DEBUG_OUTPUT << "getNodeForPartialKeyImpl() const" << std::endl;
+                _MKM_DEBUG_OUTPUT << "getNodeForKeyPrefixImpl() const" << std::endl;
                 ConstNodePtr node = m_root;
 
                 std::apply([&](auto&&... args) {
-                    node = getNodeForPartialKeyImpl<PartialKey...>(args...);
+                    node = getNodeForKeyPrefixImpl<KeyPrefix...>(args...);
                 }, key);
 
                 return node;
             }
 
             /**
-             * @brief Gets the node for the given partial key.
+             * @brief Gets the node for the given prefix key.
              *
-             * @tparam PartialKey The types for the partial key
+             * @tparam KeyPrefix The types for the prefix key
              * @param key The key to search for
              *
              * @return A shared_ptr to the node for the given key.
              */
-            template<typename... PartialKey>
-            ConstNodePtr getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key) const noexcept
+            template<typename... KeyPrefix>
+            ConstNodePtr getNodeForKeyPrefixImpl(const Wrapper<KeyPrefix>&... key) const noexcept
             {
-                _MKM_DEBUG_OUTPUT << "getNodeForPartialKeyImpl(Wrapper...) const" << std::endl;
+                _MKM_DEBUG_OUTPUT << "getNodeForKeyPrefixImpl(Wrapper...) const" << std::endl;
                 ConstNodePtr node = m_root;
 
                 // If this is the first time ever trying to get a node, make
@@ -1207,22 +1207,22 @@ namespace mkm {
             ////////
 
             /**
-             * @brief Gets the node for the given partial key.
+             * @brief Gets the node for the given prefix key.
              *
-             * @tparam PartialKey The types for the partial key
+             * @tparam KeyPrefix The types for the prefix key
              * @param key The key to search for
              *
              * @return A shared_ptr to the node for the given key.
              */
-            template<typename... PartialKey>
-            NodePtr getNodeForPartialKey(const std::tuple<PartialKey...>& key,
+            template<typename... KeyPrefix>
+            NodePtr getNodeForKeyPrefix(const std::tuple<KeyPrefix...>& key,
                                          bool createIfKeyDoesNotExist = false) noexcept
             {
-                return getNodeForPartialKey(key, std::make_index_sequence<sizeof...(PartialKey)>{}, createIfKeyDoesNotExist);
+                return getNodeForKeyPrefix(key, std::make_index_sequence<sizeof...(KeyPrefix)>{}, createIfKeyDoesNotExist);
             }
 
             /**
-             * @brief Gets the node for the given partial key. Wraps each key
+             * @brief Gets the node for the given prefix key. Wraps each key
              *        part in Wrapper.
              *
              * @tparam T The tuple type for key
@@ -1233,46 +1233,46 @@ namespace mkm {
              * @return A shared_ptr to the node for the given key.
              */
             template<typename T, std::size_t... Indices>
-            NodePtr getNodeForPartialKey(const T& key,
+            NodePtr getNodeForKeyPrefix(const T& key,
                                          std::index_sequence<Indices...>,
                                          bool createIfKeyDoesNotExist = false) noexcept
             {
-                return getNodeForPartialKeyImpl(
+                return getNodeForKeyPrefixImpl(
                     std::make_tuple(makeWrapper( std::get<Indices>(key) )...),
                     createIfKeyDoesNotExist);
             }
 
             /**
-             * @brief Implementation detail for getNodeForPartialKey
+             * @brief Implementation detail for getNodeForKeyPrefix
              *
-             * @tparam PartialKey The types for the partial key
-             * @param key A partial key.
+             * @tparam KeyPrefix The types for the prefix key
+             * @param key A prefix key.
              *
              * @return  A shared_ptr to the node for the given key.
              */
-            template<typename... PartialKey>
-            NodePtr getNodeForPartialKeyImpl(const std::tuple<Wrapper<PartialKey>...>& key,
+            template<typename... KeyPrefix>
+            NodePtr getNodeForKeyPrefixImpl(const std::tuple<Wrapper<KeyPrefix>...>& key,
                                              bool createIfKeyDoesNotExist = false)
             {
                 NodePtr node = m_root;
 
                 std::apply([&](auto&&... args) {
-                    node = getNodeForPartialKeyImpl<PartialKey...>(args..., createIfKeyDoesNotExist);
+                    node = getNodeForKeyPrefixImpl<KeyPrefix...>(args..., createIfKeyDoesNotExist);
                 }, key);
 
                 return node;
             }
 
             /**
-             * @brief Gets the node for the given partial key.
+             * @brief Gets the node for the given prefix key.
              *
-             * @tparam PartialKey The types for the partial key
+             * @tparam KeyPrefix The types for the prefix key
              * @param key The key to search for
              *
              * @return A shared_ptr to the node for the given key.
              */
-            template<typename... PartialKey>
-            NodePtr getNodeForPartialKeyImpl(const Wrapper<PartialKey>&... key,
+            template<typename... KeyPrefix>
+            NodePtr getNodeForKeyPrefixImpl(const Wrapper<KeyPrefix>&... key,
                                              bool createIfKeyDoesNotExist = false)
             {
                 NodePtr node = m_root;

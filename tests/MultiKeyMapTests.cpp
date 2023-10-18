@@ -142,7 +142,7 @@ TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapInsert) {
     ASSERT_EQ(it1, multiKeyMap.end());
 }
 
-TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapPartialKeyLookup) {
+TEST(MultiKeyMapTests, ValidateComplexMultiKeyMapKeyPrefixLookup) {
     ComplexMultiKeyMapType multiKeyMap;
 
     auto key1 = std::make_tuple(5, 'c', true);

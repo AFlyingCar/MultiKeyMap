@@ -4,20 +4,20 @@
 ## Description
 
 Small C++17 header-only library that implements a multi-key associative
-container with partial-key lookup. Each part of the full key for values can be a
+container with key-prefix lookup. Each part of the full key for values can be a
 unique hashable type.
 
-Since value lookup can be done using only part of the key (assuming the partial
-key is provided in the same order as specified in the template parameters and
+Since value lookup can be done using only part of the key (assuming the key
+prefix is provided in the same order as specified in the template parameters and
 no parts are skipped), doing a `find` operation will return an iterator that
-iterates over all possible values whose keys start with the given partial key.
+iterates over all possible values whose keys start with the given key prefix.
 
 `MultiKeyMap` is implemented internally as a
 [Trie](https://en.wikipedia.org/wiki/Trie) data structure with a compile-time
 known depth, and allocates a `std::unordered_map` for each "part" of the key in
 every node.
 
-Only the following methods support providing partial keys, while all others
+Only the following methods support providing key prefixes, while all others
 require a full key:
 * `find`
 * `count`
@@ -54,7 +54,7 @@ int main() {
                          << "}: " << p.second << std::endl;
     }
 
-    // Lookup a value by partial key.
+    // Lookup a value by key prefix.
     // Will only print out values "first", "second", and "fifth"
     auto it = m.find(std::make_tuple(6));
     for(; it != m.end(); ++it) {
@@ -64,7 +64,7 @@ int main() {
                          << "}: " << it->second << std::endl;
     }
 
-    // Erase a value using a partial key
+    // Erase a value using a key prefix
     m.erase(std::make_tuple(6, 'd'));
 }
 ```
