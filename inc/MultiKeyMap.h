@@ -20,10 +20,15 @@ namespace mkm {
             public:
                 int overflow(int c) { return c; }
         };
-        NullBuffer nul_buffer;
-        std::ostream nul(&nul_buffer);
+
+        inline std::ostream& __getNulBuffer() {
+            static NullBuffer nul_buffer;
+            static std::ostream nul(&nul_buffer);
+
+            return nul;
+        }
 #  define _MKM_DEFAULT_DEBUG
-#  define _MKM_DEBUG_OUTPUT ::mkm::detail::nul
+#  define _MKM_DEBUG_OUTPUT ::mkm::detail::__getNulBuffer()
 # endif
 
         /**
